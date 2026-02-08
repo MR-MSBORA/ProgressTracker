@@ -1,0 +1,23 @@
+// Prisma client generator (used to talk to database)
+generator client {
+  provider = "prisma-client-js"
+}
+
+// Database connection settings
+datasource db {
+  provider = "postgresql"           // Using PostgreSQL database
+  url      = env("DATABASE_URL")     // DB URL from .env file
+}
+
+// User table / collection
+model User {
+  id                       String   @id @default(uuid()) // Unique user ID
+  email                    String   @unique              // User email (must be unique)
+  password                 String                         // Hashed password
+  name                     String?                        // Optional name
+  isEmailVerified          Boolean  @default(false)       // Email verified or not
+  emailVerificationToken   String?  @unique               // Token for email verification
+  emailVerificationExpires DateTime?                      // Token expiry time
+  createdAt                DateTime @default(now())       // Account creation time
+  updatedAt                DateTime @updatedAt            // Auto update time
+}
