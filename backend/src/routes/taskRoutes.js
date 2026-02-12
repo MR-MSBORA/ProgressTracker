@@ -1,0 +1,85 @@
+// import express from "express"; // Import Express framework
+// import { createTask } from "../controllers/taskControllers.js"; // Import task controller
+// import { protect } from "../middlewares/authMiddleware.js"; // Import auth middleware
+// import {
+//   createTask,
+//   getTasks,
+//   getTask,
+//   updateTask,
+//   deleteTask,
+//   markComplete,
+//   getDailyScore,
+// } from "../controllers/taskController.js";
+
+
+// const router = express.Router(); // Create router instance
+
+// // Apply authentication middleware to all task routes
+// router.use(protect);
+
+// // POST /api/tasks → Create a new task
+// router.post("/", createTask);
+// // Stats route MUST be before /:id
+// router.get('/stats/daily', getDailyScore);
+
+// router.route('/')
+//   .get(getTasks)
+//   .post(createTask);
+
+// router.route('/:id')
+//   .get(getTask)
+//   .put(updateTask)
+//   .delete(deleteTask);
+
+// router.patch('/:id/complete', markComplete);
+
+
+// export default router; // Export router
+
+
+// Import Express framework
+import express from "express";
+
+// Import all task controller functions
+import {
+  createTask,
+  getTasks,
+  getTask,
+  updateTask,
+  deleteTask,
+  markComplete,
+  getDailyScore,
+} from "../controllers/taskController.js";
+
+// Import authentication middleware
+import { protect } from "../middlewares/authMiddleware.js";
+
+// Create router instance
+const router = express.Router();
+
+// 🔐 Apply protect middleware to all routes below
+// Ensures only logged-in users can access task APIs
+router.use(protect);
+
+// 📊 Daily stats route
+// MUST come before "/:id" otherwise "stats" will be treated as an ID
+router.get("/stats/daily", getDailyScore);
+
+// 📌 Get all tasks OR create new task
+router
+  .route("/")
+  .get(getTasks)      // GET /api/tasks
+  .post(createTask);  // POST /api/tasks
+
+// 📌 Operations on single task by ID
+router
+  .route("/:id")
+  .get(getTask)       // Get single task
+  .put(updateTask)    // Update task
+  .delete(deleteTask); // Delete task
+
+// ✅ Toggle task complete/pending status
+router.patch("/:id/complete", markComplete);
+
+// Export router
+export default router;
