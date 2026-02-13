@@ -1,42 +1,3 @@
-// import express from "express"; // Import Express framework
-// import { createTask } from "../controllers/taskControllers.js"; // Import task controller
-// import { protect } from "../middlewares/authMiddleware.js"; // Import auth middleware
-// import {
-//   createTask,
-//   getTasks,
-//   getTask,
-//   updateTask,
-//   deleteTask,
-//   markComplete,
-//   getDailyScore,
-// } from "../controllers/taskController.js";
-
-
-// const router = express.Router(); // Create router instance
-
-// // Apply authentication middleware to all task routes
-// router.use(protect);
-
-// // POST /api/tasks → Create a new task
-// router.post("/", createTask);
-// // Stats route MUST be before /:id
-// router.get('/stats/daily', getDailyScore);
-
-// router.route('/')
-//   .get(getTasks)
-//   .post(createTask);
-
-// router.route('/:id')
-//   .get(getTask)
-//   .put(updateTask)
-//   .delete(deleteTask);
-
-// router.patch('/:id/complete', markComplete);
-
-
-// export default router; // Export router
-
-
 // Import Express framework
 import express from "express";
 
@@ -49,7 +10,7 @@ import {
   deleteTask,
   markComplete,
   getDailyScore,
-} from "../controllers/taskController.js";
+} from "../controllers/taskControllers.js";
 
 // Import authentication middleware
 import { protect } from "../middlewares/authMiddleware.js";
