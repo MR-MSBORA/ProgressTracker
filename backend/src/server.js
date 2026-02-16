@@ -20,7 +20,7 @@ import connectDB from "./config/db.js";
 // Auth routes (register, verify email, etc.)
 import authRoutes from "./routes/authRoutes.js";
 import goalRoutes from "./routes/goalRoutes.js"
-
+import skillRoutes from "./routes/skillRoutes.js"
 
 // ================= CONFIGURATION =================
 
@@ -80,6 +80,9 @@ app.get('/api/v1/health', (req, res) => {
 app.use('/api/auth', authRoutes);
 app.use('/api/tasks', taskRoutes);
 app.use('/api/goals', goalRoutes);
+app.use('/api/skills', skillRoutes);
+
+
 // ================= TEST ROUTE =================
 
 /**
