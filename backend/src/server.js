@@ -21,7 +21,7 @@ import connectDB from "./config/db.js";
 import authRoutes from "./routes/authRoutes.js";
 import goalRoutes from "./routes/goalRoutes.js"
 import skillRoutes from "./routes/skillRoutes.js"
-
+import reflectionRoutes from "./routes/reflectionRoutes.js";
 // ================= CONFIGURATION =================
 
 
@@ -81,7 +81,7 @@ app.use('/api/auth', authRoutes);
 app.use('/api/tasks', taskRoutes);
 app.use('/api/goals', goalRoutes);
 app.use('/api/skills', skillRoutes);
-
+app.use("/api/reflections", reflectionRoutes);
 
 // ================= TEST ROUTE =================
 
