@@ -8,7 +8,7 @@ import {
   logPractice,
   getPracticeHistory,
   getSkillStats,
-} from "../controllers/skillController.js";
+} from "../controllers/skillControllers.js";
 import { protect } from "../middlewares/authMiddleware.js";
 
 const router = express.Router();

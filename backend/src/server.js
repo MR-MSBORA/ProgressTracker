@@ -22,6 +22,8 @@ import authRoutes from "./routes/authRoutes.js";
 import goalRoutes from "./routes/goalRoutes.js"
 import skillRoutes from "./routes/skillRoutes.js"
 import reflectionRoutes from "./routes/reflectionRoutes.js";
+import analyticRoutes from "./routes/analyticRoutes.js"
+
 // ================= CONFIGURATION =================
 
 
@@ -82,6 +84,7 @@ app.use('/api/tasks', taskRoutes);
 app.use('/api/goals', goalRoutes);
 app.use('/api/skills', skillRoutes);
 app.use("/api/reflections", reflectionRoutes);
+app.use("/api/analytics", analyticRoutes);
 
 // ================= TEST ROUTE =================
 
