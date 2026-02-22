@@ -1,99 +1,99 @@
-// Import helmet (ES6)
-import helmet from 'helmet';
+// import helmet from "helmet";
+// import mongoSanitize from "express-mongo-sanitize";
+// import xss from "xss-clean";
+// import hpp from "hpp";
 
-/* =================================
-   Security Headers (Helmet Config)
-================================= */
-export const securityHeaders = helmet({
+// // Helmet helps secure Express apps by setting various HTTP headers
+// export const helmetConfig = helmet({
+//   contentSecurityPolicy: {
+//     directives: {
+//       defaultSrc: ["'self'"],
+//       styleSrc: ["'self'", "'unsafe-inline'"],
+//       scriptSrc: ["'self'"],
+//       imgSrc: ["'self'", "data:", "https:"],
+//     },
+//   },
+// });
+
+// // Sanitize data to prevent NoSQL injection
+// export const sanitizeData = mongoSanitize();
+
+// // Prevent XSS attacks
+// export const preventXSS = xss();
+
+// // Prevent HTTP Parameter Pollution
+// export const preventHPP = hpp({
+//   whitelist: [
+//     "status",
+//     "priority",
+//     "category",
+//     "level",
+//     "period",
+//     "mood",
+//     "days",
+//   ], // Allow these query parameters to be duplicated
+// });
+
+// // Custom security headers
+// export const securityHeaders = (req, res, next) => {
+//   // Remove X-Powered-By header
+//   res.removeHeader("X-Powered-By");
+
+//   // Add custom security headers
+//   res.setHeader("X-Content-Type-Options", "nosniff");
+//   res.setHeader("X-Frame-Options", "DENY");
+//   res.setHeader("X-XSS-Protection", "1; mode=block");
+//   res.setHeader("Strict-Transport-Security", "max-age=31536000; includeSubDomains");
+
+//   next();
+// };
+
+import helmet from "helmet";
+import mongoSanitize from "express-mongo-sanitize";
+import xss from "xss-clean";
+import hpp from "hpp";
+
+// Helmet helps secure Express apps by setting various HTTP headers
+export const helmetConfig = helmet({
   contentSecurityPolicy: {
     directives: {
-      defaultSrc: ["'self'"], // Allow only same origin
+      defaultSrc: ["'self'"],
       styleSrc: ["'self'", "'unsafe-inline'"],
       scriptSrc: ["'self'"],
-      imgSrc: ["'self'", 'data:', 'https:'],
-      connectSrc: ["'self'"],
-      fontSrc: ["'self'"],
-      objectSrc: ["'none'"],
-      mediaSrc: ["'self'"],
-      frameSrc: ["'none'"],
+      imgSrc: ["'self'", "data:", "https:"],
     },
   },
-  crossOriginEmbedderPolicy: true,
-  crossOriginOpenerPolicy: true,
-  crossOriginResourcePolicy: { policy: "cross-origin" },
-  dnsPrefetchControl: true,
-  frameguard: { action: 'deny' }, // Prevent clickjacking
-  hidePoweredBy: true, // Hide X-Powered-By header
-  hsts: {
-    maxAge: 31536000, // 1 year
-    includeSubDomains: true,
-    preload: true
-  },
-  ieNoOpen: true,
-  noSniff: true,
-  referrerPolicy: { policy: 'strict-origin-when-cross-origin' },
-  xssFilter: true,
 });
 
-/* =================================
-   CORS Configuration
-================================= */
-export const corsOptions = {
-  origin: function (origin, callback) {
-    const allowedOrigins = process.env.ALLOWED_ORIGINS
-      ? process.env.ALLOWED_ORIGINS.split(',')
-      : ['http://localhost:5173', 'http://localhost:3000'];
+// Sanitize data to prevent NoSQL injection
+export const sanitizeData = mongoSanitize();
 
-    if (!origin) return callback(null, true); // Allow no-origin requests
+// Prevent XSS attacks
+export const preventXSS = xss();
 
-    if (allowedOrigins.includes(origin)) {
-      callback(null, true);
-    } else {
-      callback(new Error('Not allowed by CORS'));
-    }
-  },
-  credentials: true, // Allow cookies/auth headers
-  optionsSuccessStatus: 200,
-  methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
-  allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With'],
-  exposedHeaders: ['Content-Range', 'X-Content-Range'],
-  maxAge: 600 // Cache preflight for 10 minutes
-};
+// Prevent HTTP Parameter Pollution
+export const preventHPP = hpp({
+  whitelist: [
+    "status",
+    "priority",
+    "category",
+    "level",
+    "period",
+    "mood",
+    "days",
+  ], // Allow these query parameters to be duplicated
+});
 
-/* =================================
-   Request Size Limiter
-================================= */
-export const requestSizeLimiter = {
-  json: { limit: '10mb' }, // Max JSON body size
-  urlencoded: { extended: true, limit: '10mb' }
-};
+// Custom security headers
+export const securityHeaders = (req, res, next) => {
+  // Remove X-Powered-By header
+  res.removeHeader("X-Powered-By");
 
-/* =================================
-   IP Whitelist Middleware
-================================= */
-export const ipWhitelist = (whitelist) => {
-  return (req, res, next) => {
-    const clientIp = req.ip || req.connection.remoteAddress;
+  // Add custom security headers
+  res.setHeader("X-Content-Type-Options", "nosniff");
+  res.setHeader("X-Frame-Options", "DENY");
+  res.setHeader("X-XSS-Protection", "1; mode=block");
+  res.setHeader("Strict-Transport-Security", "max-age=31536000; includeSubDomains");
 
-    if (whitelist.includes(clientIp)) {
-      next();
-    } else {
-      res.status(403).json({
-        success: false,
-        message: 'Access denied: IP not whitelisted'
-      });
-    }
-  };
-};
-
-/* =================================
-   Prevent Parameter Pollution
-================================= */
-export const preventParameterPollution = (req, res, next) => {
-  for (let key in req.query) {
-    if (Array.isArray(req.query[key])) {
-      req.query[key] = req.query[key][req.query[key].length - 1]; // Keep last value
-    }
-  }
   next();
 };

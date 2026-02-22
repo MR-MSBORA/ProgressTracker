@@ -1,28 +1,56 @@
-import express from 'express';
+import express from "express";
 
 import {
   register,
+  login,
+  getMe,
   verifyEmail,
   resendVerificationEmail,
-  login,
   forgotPassword,
   resetPassword,
-  getMe,
-} from '../controllers/authControllers.js';
+} from "../controllers/authControllers.js";
 
-import { protect } from '../middlewares/authMiddleware.js';
+import { protect } from "../middlewares/authMiddleware.js";
+
+import {
+  validateRegister,
+  validateLogin,
+} from "../middlewares/validator.js";
+
+import { authLimiter } from "../middlewares/rateLimiter.js";
 
 const router = express.Router();
 
-// ========== PUBLIC ROUTES ==========
-router.post('/register', register);
-router.get('/verify-email/:token', verifyEmail);
-router.post('/login', login);
-router.post('/forgot-password', forgotPassword);
-router.put('/reset-password/:token', resetPassword);
 
-// ========== PRIVATE ROUTES ==========
-router.get('/me', protect, getMe);
-router.post('/resend-verification', protect, resendVerificationEmail);
+// ================= PUBLIC ROUTES =================
+
+// Register new user (rate limit + input validation)
+router.post("/register", authLimiter, validateRegister, register);
+
+// Login user (rate limit + validation)
+router.post("/login", authLimiter, validateLogin, login);
+
+// Verify email using token
+router.get("/verify/:token", verifyEmail);
+
+// Send password reset link
+router.post("/forgot-password", authLimiter, forgotPassword);
+
+// Reset password using token
+router.put("/reset-password/:token", authLimiter, resetPassword);
+
+
+// ================= PRIVATE ROUTES =================
+
+// Get current logged-in user details
+router.get("/me", protect, getMe);
+
+// Resend email verification (protected route)
+router.post(
+  "/resend-verification",
+  protect,
+  authLimiter,
+  resendVerificationEmail
+);
 
 export default router;
