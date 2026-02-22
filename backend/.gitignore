@@ -152,6 +152,11 @@ logs/
 *.swo
 *~
 
+node_modules/
+.env
+logs/
+*.log
+
 # OS
 Thumbs.db
 ```

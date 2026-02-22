@@ -115,7 +115,13 @@ export const groupTasksByDate = (tasks) => {
     }
     
     grouped[date].total++;
-    grouped[date][task.status]++;
+    if (task.status === 'completed') {
+      grouped[date].completed++;
+    } else if (task.status === 'pending') {
+      grouped[date].pending++;
+    } else if (task.status === 'in-progress') {
+      grouped[date].inProgress++;
+    }
     grouped[date].tasks.push(task);
   });
   
