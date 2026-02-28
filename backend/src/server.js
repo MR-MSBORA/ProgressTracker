@@ -22,8 +22,6 @@ import analyticRoutes from "./routes/analyticRoutes.js";
 // ================= MIDDLEWARE =================
 import {
   helmetConfig,     // Helmet security
-  sanitizeData,     // Prevent NoSQL injection
-  preventXSS,       // Prevent XSS attacks
   preventHPP,       // Prevent HTTP parameter pollution
   securityHeaders,  // Custom security headers
 } from "./middlewares/security.js";
@@ -52,8 +50,6 @@ const app = express();
 // Apply layered security middleware
 app.use(helmetConfig);
 app.use(securityHeaders);
-app.use(sanitizeData);
-app.use(preventXSS);
 app.use(preventHPP);
 
 
