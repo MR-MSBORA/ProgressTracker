@@ -31,7 +31,7 @@ router.post("/register", authLimiter, validateRegister, register);
 router.post("/login", authLimiter, validateLogin, login);
 
 // Verify email using token
-router.get("/verify/:token", verifyEmail);
+router.get("/verify-email/:token", verifyEmail);
 
 // Send password reset link
 router.post("/forgot-password", authLimiter, forgotPassword);

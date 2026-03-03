@@ -12,6 +12,8 @@
 
 // export default Login;
 
+
+
 import { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { FiMail, FiLock, FiEye, FiEyeOff, FiArrowRight } from 'react-icons/fi';
@@ -20,12 +22,12 @@ import { getFieldError } from '../../utils/validation';
 
 const Login = () => {
   const { login } = useAuth();
-  
+
   const [formData, setFormData] = useState({
     email: '',
     password: '',
   });
-  
+
   const [errors, setErrors] = useState({});
   const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
@@ -33,7 +35,7 @@ const Login = () => {
   const handleChange = (e) => {
     const { name, value } = e.target;
     setFormData((prev) => ({ ...prev, [name]: value }));
-    
+
     // Clear error when user starts typing
     if (errors[name]) {
       setErrors((prev) => ({ ...prev, [name]: '' }));
@@ -42,25 +44,27 @@ const Login = () => {
 
   const validateForm = () => {
     const newErrors = {};
-    
+
     const emailError = getFieldError('Email', formData.email);
     if (emailError) newErrors.email = emailError;
-    
+
     const passwordError = getFieldError('Password', formData.password);
     if (passwordError) newErrors.password = passwordError;
-    
+
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
   };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    
+
     if (!validateForm()) return;
-    
+
     setLoading(true);
-    await login(formData.email, formData.password);
+    const result = await login(formData.email, formData.password);
     setLoading(false);
+
+    // Navigation is handled in AuthContext, so we don't need anything here
   };
 
   return (
@@ -71,9 +75,9 @@ const Login = () => {
           {/* Logo */}
           <div className="text-center">
             <Link to="/" className="inline-flex items-center justify-center gap-2 group">
-              <img 
-                src="/logo.png" 
-                alt="Progressly" 
+              <img
+                src="/logo.png"
+                alt="Progressly"
                 className="h-12 w-auto transform group-hover:scale-110 transition-transform"
               />
             </Link>
@@ -104,9 +108,8 @@ const Login = () => {
                   required
                   value={formData.email}
                   onChange={handleChange}
-                  className={`block w-full pl-10 pr-3 py-3 border ${
-                    errors.email ? 'border-red-500' : 'border-gray-300'
-                  } rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-colors`}
+                  className={`block w-full pl-10 pr-3 py-3 border ${errors.email ? 'border-red-500' : 'border-gray-300'
+                    } rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-colors`}
                   placeholder="Enter your email"
                 />
               </div>
@@ -132,9 +135,8 @@ const Login = () => {
                   required
                   value={formData.password}
                   onChange={handleChange}
-                  className={`block w-full pl-10 pr-10 py-3 border ${
-                    errors.password ? 'border-red-500' : 'border-gray-300'
-                  } rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-colors`}
+                  className={`block w-full pl-10 pr-10 py-3 border ${errors.password ? 'border-red-500' : 'border-gray-300'
+                    } rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-colors`}
                   placeholder="Enter your password"
                 />
                 <button

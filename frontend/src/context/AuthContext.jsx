@@ -335,54 +335,175 @@
 // export default useAuth;
 
 
-import { createContext, useState, useEffect, useContext } from "react";
-import { useNavigate } from "react-router-dom";
-import toast from "react-hot-toast";
-import api from "../utils/api"; // ✅ Correct relative path
+// import { createContext, useState, useEffect, useContext } from "react";
+// import { useNavigate } from "react-router-dom";
+// import toast from "react-hot-toast";
+// import api from "../utils/api"; // ✅ Correct relative path
 
-// Create Context
-const AuthContext = createContext(null);
+// // Create Context
+// const AuthContext = createContext(null);
 
-// Custom Hook
+// // Custom Hook
+// export const useAuth = () => {
+//   const context = useContext(AuthContext);
+
+//   if (!context) {
+//     throw new Error("useAuth must be used within AuthProvider");
+//   }
+
+//   return context;
+// };
+
+// // Provider Component
+// export const AuthProvider = ({ children }) => {
+//   const [user, setUser] = useState(null);
+//   const [loading, setLoading] = useState(true);
+//   const [isAuthenticated, setIsAuthenticated] = useState(false);
+
+//   const navigate = useNavigate();
+
+//   // Load user on mount
+//   useEffect(() => {
+//     loadUser();
+//   }, []);
+
+//   const loadUser = async () => {
+//     const token = localStorage.getItem("token");
+
+//     if (!token) {
+//       setLoading(false);
+//       return;
+//     }
+
+//     try {
+//       const { data } = await api.get("/auth/me");
+
+//       setUser(data.data);
+//       setIsAuthenticated(true);
+//     } catch (error) {
+//       console.error("Load user error:", error);
+//       localStorage.removeItem("token");
+//       setIsAuthenticated(false);
+//     } finally {
+//       setLoading(false);
+//     }
+//   };
+
+//   const register = async (name, email, password) => {
+//     try {
+//       const { data } = await api.post("/auth/register", {
+//         name,
+//         email,
+//         password,
+//       });
+
+//       toast.success("Registration successful! Please check your email.");
+//       return { success: true, data };
+//     } catch (error) {
+//       const message =
+//         error.response?.data?.error || "Registration failed";
+
+//       toast.error(message);
+//       return { success: false, error: message };
+//     }
+//   };
+
+//   const login = async (email, password) => {
+//     try {
+//       const { data } = await api.post("/auth/login", {
+//         email,
+//         password,
+//       });
+
+//       localStorage.setItem("token", data.token);
+//       setUser(data.user);
+//       setIsAuthenticated(true);
+
+//       toast.success(`Welcome back, ${data.user.name}!`);
+//       navigate("/app/dashboard");
+
+//       return { success: true };
+//     } catch (error) {
+//       const message =
+//         error.response?.data?.error || "Login failed";
+
+//       toast.error(message);
+//       return { success: false, error: message };
+//     }
+//   };
+
+//   const logout = () => {
+//     localStorage.removeItem("token");
+//     setUser(null);
+//     setIsAuthenticated(false);
+
+//     toast.success("Logged out successfully");
+//     navigate("/login");
+//   };
+
+//   const updateUser = (updatedData) => {
+//     setUser((prev) => ({ ...prev, ...updatedData }));
+//   };
+
+//   const value = {
+//     user,
+//     loading,
+//     isAuthenticated,
+//     register,
+//     login,
+//     logout,
+//     updateUser,
+//   };
+
+//   return (
+//     <AuthContext.Provider value={value}>
+//       {children}
+//     </AuthContext.Provider>
+//   );
+// };
+
+import { createContext, useState, useEffect, useContext } from 'react';
+import { useNavigate } from 'react-router-dom';
+import api from '../utils/api';
+import toast from 'react-hot-toast';
+
+const AuthContext = createContext();
+
 export const useAuth = () => {
   const context = useContext(AuthContext);
-
   if (!context) {
-    throw new Error("useAuth must be used within AuthProvider");
+    throw new Error('useAuth must be used within AuthProvider');
   }
-
   return context;
 };
 
-// Provider Component
 export const AuthProvider = ({ children }) => {
   const [user, setUser] = useState(null);
   const [loading, setLoading] = useState(true);
   const [isAuthenticated, setIsAuthenticated] = useState(false);
-
+  
   const navigate = useNavigate();
 
-  // Load user on mount
   useEffect(() => {
     loadUser();
   }, []);
 
   const loadUser = async () => {
-    const token = localStorage.getItem("token");
-
+    const token = localStorage.getItem('token');
+    
     if (!token) {
       setLoading(false);
       return;
     }
 
     try {
-      const { data } = await api.get("/auth/me");
-
+      const { data } = await api.get('/auth/me');
       setUser(data.data);
       setIsAuthenticated(true);
     } catch (error) {
-      console.error("Load user error:", error);
-      localStorage.removeItem("token");
+      console.error('Load user error:', error);
+      localStorage.removeItem('token');
+      setUser(null);
       setIsAuthenticated(false);
     } finally {
       setLoading(false);
@@ -391,54 +512,82 @@ export const AuthProvider = ({ children }) => {
 
   const register = async (name, email, password) => {
     try {
-      const { data } = await api.post("/auth/register", {
+      const { data } = await api.post('/auth/register', {
         name,
         email,
         password,
       });
 
-      toast.success("Registration successful! Please check your email.");
+      toast.success('Registration successful! You can now login.', {
+        duration: 4000,
+        icon: '🎉',
+      });
+      
       return { success: true, data };
     } catch (error) {
-      const message =
-        error.response?.data?.error || "Registration failed";
+      console.error('Register error:', error);
+      
+      let errorMessage = 'Registration failed. Please try again.';
+      
+      if (error.response?.data?.error) {
+        if (Array.isArray(error.response.data.error)) {
+          errorMessage = error.response.data.error.join(', ');
+        } else {
+          errorMessage = error.response.data.error;
+        }
+      }
 
-      toast.error(message);
-      return { success: false, error: message };
+      toast.error(errorMessage, { duration: 5000 });
+      return { success: false, error: errorMessage };
     }
   };
 
   const login = async (email, password) => {
     try {
-      const { data } = await api.post("/auth/login", {
+      const { data } = await api.post('/auth/login', {
         email,
         password,
       });
 
-      localStorage.setItem("token", data.token);
+      // Save token FIRST
+      localStorage.setItem('token', data.token);
+      
+      // Update state
       setUser(data.user);
       setIsAuthenticated(true);
 
-      toast.success(`Welcome back, ${data.user.name}!`);
-      navigate("/app/dashboard");
+      // Show success message
+      toast.success(`Welcome back, ${data.user.name}!`, {
+        icon: '👋',
+        duration: 2000,
+      });
+
+      // Navigate immediately (don't wait)
+      navigate('/app/dashboard', { replace: true });
 
       return { success: true };
     } catch (error) {
-      const message =
-        error.response?.data?.error || "Login failed";
+      console.error('Login error:', error);
+      
+      let errorMessage = 'Login failed. Please try again.';
+      
+      if (error.response?.data?.error) {
+        errorMessage = error.response.data.error;
+      } else if (error.response?.status === 401) {
+        errorMessage = 'Invalid email or password';
+      }
 
-      toast.error(message);
-      return { success: false, error: message };
+      toast.error(errorMessage, { duration: 4000 });
+      return { success: false, error: errorMessage };
     }
   };
 
   const logout = () => {
-    localStorage.removeItem("token");
+    localStorage.removeItem('token');
     setUser(null);
     setIsAuthenticated(false);
-
-    toast.success("Logged out successfully");
-    navigate("/login");
+    toast.success('Logged out successfully');
+    navigate('/login', { replace: true });
   };
 
   const updateUser = (updatedData) => {
@@ -455,9 +604,5 @@ export const AuthProvider = ({ children }) => {
     updateUser,
   };
 
-  return (
-    <AuthContext.Provider value={value}>
-      {children}
-    </AuthContext.Provider>
-  );
+  return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
 };
