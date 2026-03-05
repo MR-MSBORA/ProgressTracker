@@ -26,3 +26,13 @@
 .animation-delay-4000 {
   animation-delay: 4s;
 }
+
+:root {
+  --tooltip-bg: #ffffff;
+  --tooltip-border: #e5e7eb;
+}
+
+.dark {
+  --tooltip-bg: #1f2937;
+  --tooltip-border: #374151;
+}

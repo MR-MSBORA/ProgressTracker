@@ -526,81 +526,139 @@ async function getStreakData(userId) {
 // @desc    Get heatmap data for activity calendar
 // @route   GET /api/analytics/heatmap
 // @access  Private
+// export const getHeatmapData = async (req, res) => {
+//   try {
+//     // Get date range (default: last 365 days)
+//     const days = parseInt(req.query.days) || 365;
+//     const { startDate, endDate } = getLastNDays(days);
+
+//     // Get all tasks in date range
+//     const tasks = await Task.find({
+//       user: req.user.id,
+//       createdAt: { $gte: startDate, $lte: endDate },
+//     });
+
+//     // Group tasks by date
+//     const tasksByDate = groupTasksByDate(tasks);
+
+//     // Create heatmap data array
+//     const heatmapData = [];
+//     const allDates = getDateRange(startDate, endDate);
+
+//     allDates.forEach((dateStr) => {
+//       const dayData = tasksByDate[dateStr] || {
+//         total: 0,
+//         completed: 0,
+//         pending: 0,
+//         inProgress: 0,
+//       };
+
+//       // Calculate intensity level (0-4)
+//       let intensity = 0;
+//       if (dayData.total > 0) {
+//         if (dayData.completed >= 10) intensity = 4;
+//         else if (dayData.completed >= 7) intensity = 3;
+//         else if (dayData.completed >= 4) intensity = 2;
+//         else if (dayData.completed >= 1) intensity = 1;
+//       }
+
+//       heatmapData.push({
+//         date: dateStr,
+//         count: dayData.total,
+//         completed: dayData.completed,
+//         pending: dayData.pending,
+//         inProgress: dayData.inProgress,
+//         intensity, // 0 = no activity, 4 = high activity
+//       });
+//     });
+
+//     // Calculate summary statistics
+//     const totalDays = heatmapData.length;
+//     const activeDays = heatmapData.filter((d) => d.count > 0).length;
+//     const totalCompleted = heatmapData.reduce((sum, d) => sum + d.completed, 0);
+//     const maxDay = heatmapData.reduce(
+//       (max, d) => (d.completed > max.completed ? d : max),
+//       heatmapData[0]
+//     );
+
+//     res.status(200).json({
+//       success: true,
+//       data: {
+//         heatmap: heatmapData,
+//         summary: {
+//           totalDays,
+//           activeDays,
+//           totalCompleted,
+//           activityRate: calculatePercentage(activeDays, totalDays),
+//           bestDay: {
+//             date: maxDay.date,
+//             completed: maxDay.completed,
+//           },
+//         },
+//       },
+//     });
+//   } catch (error) {
+//     res.status(500).json({
+//       success: false,
+//       error: "Server error",
+//     });
+//   }
+// };
+
 export const getHeatmapData = async (req, res) => {
   try {
-    // Get date range (default: last 365 days)
-    const days = parseInt(req.query.days) || 365;
-    const { startDate, endDate } = getLastNDays(days);
+    const userId = req.user.id;
+    const year = req.query.year || new Date().getFullYear();
 
-    // Get all tasks in date range
+    // Get all tasks for the year
+    const startDate = new Date(`${year}-01-01`);
+    const endDate = new Date(`${year}-12-31`);
+
     const tasks = await Task.find({
-      user: req.user.id,
-      createdAt: { $gte: startDate, $lte: endDate },
+      user: userId,
+      date: { $gte: startDate, $lte: endDate }
     });
 
     // Group tasks by date
-    const tasksByDate = groupTasksByDate(tasks);
-
-    // Create heatmap data array
     const heatmapData = [];
-    const allDates = getDateRange(startDate, endDate);
+    const currentDate = new Date(startDate);
 
-    allDates.forEach((dateStr) => {
-      const dayData = tasksByDate[dateStr] || {
-        total: 0,
-        completed: 0,
-        pending: 0,
-        inProgress: 0,
-      };
+    while (currentDate <= endDate) {
+      const dateStr = currentDate.toISOString().split('T')[0];
+      
+      // Count completed tasks for this date
+      const dayTasks = tasks.filter(task => {
+        const taskDate = new Date(task.date).toISOString().split('T')[0];
+        return taskDate === dateStr;
+      });
 
+      const completedCount = dayTasks.filter(t => t.completed).length;
+      
       // Calculate intensity level (0-4)
-      let intensity = 0;
-      if (dayData.total > 0) {
-        if (dayData.completed >= 10) intensity = 4;
-        else if (dayData.completed >= 7) intensity = 3;
-        else if (dayData.completed >= 4) intensity = 2;
-        else if (dayData.completed >= 1) intensity = 1;
-      }
+      let level = 0;
+      if (completedCount > 0) level = 1;
+      if (completedCount >= 3) level = 2;
+      if (completedCount >= 5) level = 3;
+      if (completedCount >= 8) level = 4;
 
       heatmapData.push({
         date: dateStr,
-        count: dayData.total,
-        completed: dayData.completed,
-        pending: dayData.pending,
-        inProgress: dayData.inProgress,
-        intensity, // 0 = no activity, 4 = high activity
+        count: completedCount,
+        total: dayTasks.length,
+        level: level
       });
-    });
 
-    // Calculate summary statistics
-    const totalDays = heatmapData.length;
-    const activeDays = heatmapData.filter((d) => d.count > 0).length;
-    const totalCompleted = heatmapData.reduce((sum, d) => sum + d.completed, 0);
-    const maxDay = heatmapData.reduce(
-      (max, d) => (d.completed > max.completed ? d : max),
-      heatmapData[0]
-    );
+      currentDate.setDate(currentDate.getDate() + 1);
+    }
 
     res.status(200).json({
       success: true,
-      data: {
-        heatmap: heatmapData,
-        summary: {
-          totalDays,
-          activeDays,
-          totalCompleted,
-          activityRate: calculatePercentage(activeDays, totalDays),
-          bestDay: {
-            date: maxDay.date,
-            completed: maxDay.completed,
-          },
-        },
-      },
+      data: heatmapData
     });
   } catch (error) {
     res.status(500).json({
       success: false,
-      error: "Server error",
+      message: error.message
     });
   }
 };
@@ -929,3 +987,119 @@ export const getProductivityPatterns = async (req, res) => {
     });
   }
 };
+
+
+// // 1. GET HEATMAP DATA
+// const getHeatmapData = async (req, res) => {
+//   try {
+//     const userId = req.user.id;
+//     const year = req.query.year || new Date().getFullYear();
+
+//     // Get all tasks for the year
+//     const startDate = new Date(`${year}-01-01`);
+//     const endDate = new Date(`${year}-12-31`);
+
+//     const tasks = await Task.find({
+//       user: userId,
+//       date: { $gte: startDate, $lte: endDate }
+//     });
+
+//     // Group tasks by date
+//     const heatmapData = [];
+//     const currentDate = new Date(startDate);
+
+//     while (currentDate <= endDate) {
+//       const dateStr = currentDate.toISOString().split('T')[0];
+      
+//       // Count completed tasks for this date
+//       const dayTasks = tasks.filter(task => {
+//         const taskDate = new Date(task.date).toISOString().split('T')[0];
+//         return taskDate === dateStr;
+//       });
+
+//       const completedCount = dayTasks.filter(t => t.completed).length;
+      
+//       // Calculate intensity level (0-4)
+//       let level = 0;
+//       if (completedCount > 0) level = 1;
+//       if (completedCount >= 3) level = 2;
+//       if (completedCount >= 5) level = 3;
+//       if (completedCount >= 8) level = 4;
+
+//       heatmapData.push({
+//         date: dateStr,
+//         count: completedCount,
+//         total: dayTasks.length,
+//         level: level
+//       });
+
+//       currentDate.setDate(currentDate.getDate() + 1);
+//     }
+
+//     res.status(200).json({
+//       success: true,
+//       data: heatmapData
+//     });
+//   } catch (error) {
+//     res.status(500).json({
+//       success: false,
+//       message: error.message
+//     });
+//   }
+// };
+
+// 2. GET WEEKLY SUMMARY
+export const getWeeklySummary = async (req, res) => {
+  try {
+    const userId = req.user.id;
+    
+    // Get current week's tasks
+    const today = new Date();
+    const monday = new Date(today);
+    monday.setDate(today.getDate() - today.getDay() + 1);
+    
+    const sunday = new Date(monday);
+    sunday.setDate(monday.getDate() + 6);
+
+    const tasks = await Task.find({
+      user: userId,
+      date: { $gte: monday, $lte: sunday }
+    });
+
+    // Group by day of week
+    const daysOfWeek = ['monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday', 'sunday'];
+    const weeklySummary = {};
+
+    daysOfWeek.forEach((day, index) => {
+      const dayDate = new Date(monday);
+      dayDate.setDate(monday.getDate() + index);
+      
+      const dayTasks = tasks.filter(task => {
+        const taskDate = new Date(task.date).toDateString();
+        return taskDate === dayDate.toDateString();
+      });
+
+      const completed = dayTasks.filter(t => t.completed).length;
+      const total = dayTasks.length;
+      const percentage = total > 0 ? Math.round((completed / total) * 100) : 0;
+
+      weeklySummary[day] = { completed, total, percentage };
+    });
+
+    res.status(200).json({
+      success: true,
+      data: weeklySummary
+    });
+  } catch (error) {
+    res.status(500).json({
+      success: false,
+      message: error.message
+    });
+  }
+};
+
+// module.exports = {
+//   // ... existing exports
+//   getHeatmapData,
+//   getWeeklySummary
+// };

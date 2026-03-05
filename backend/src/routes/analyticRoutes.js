@@ -32,8 +32,10 @@ import {
   getHeatmapData,
   getSmartInsights,
   getProductivityPatterns,
+  getWeeklySummary,
 } from "../controllers/analyticsControllers.js";
 import { protect } from "../middlewares/authMiddleware.js";
+
 
 const router = express.Router();
 
@@ -51,5 +53,7 @@ router.get("/dashboard", getDashboardOverview);
 router.get("/heatmap", getHeatmapData);
 router.get("/insights", getSmartInsights);
 router.get("/patterns", getProductivityPatterns);
+router.get("/heatmap", protect, getHeatmapData);
+router.get("/weekly-summary", protect, getWeeklySummary);
 
 export default router;
