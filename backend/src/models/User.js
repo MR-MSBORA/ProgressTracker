@@ -3,7 +3,7 @@ import bcrypt from "bcryptjs";
 import jwt from "jsonwebtoken";
 import crypto from "crypto";
 
-//create user data model
+// ================= USER SCHEMA =================
 
 const UserSchema = new mongoose.Schema(
   {
@@ -17,7 +17,7 @@ const UserSchema = new mongoose.Schema(
     email: {
       type: String,
       required: [true, "Please add an email"],
-      unique: true, // Prevent duplicate accounts
+      unique: true,
       lowercase: true,
       trim: true,
       match: [
@@ -30,121 +30,135 @@ const UserSchema = new mongoose.Schema(
       type: String,
       required: [true, "Please add a password"],
       minlength: [6, "Password must be at least 6 characters"],
-      select: false, // Exclude password from query results
+      select: false,
     },
 
     role: {
       type: String,
-      enum: ["user", "admin"], // Allowed roles
+      enum: ["user", "admin"],
       default: "user",
-    }, // ========== EMAIL VERIFICATION FIELDS ==========
+    },
+
+    // ================= EMAIL VERIFICATION =================
+
     isEmailVerified: {
       type: Boolean,
       default: false,
     },
+
     emailVerificationToken: {
       type: String,
       select: false,
     },
+
     emailVerificationExpire: {
       type: Date,
       select: false,
     },
 
-    // ========== PASSWORD RESET FIELDS ==========
+    // ================= PASSWORD RESET =================
+
     resetPasswordToken: {
       type: String,
       select: false,
     },
+
     resetPasswordExpire: {
       type: Date,
       select: false,
     },
 
-    createdAt: {
-      type: Date,
-      default: Date.now,
-    },
     lastLogin: {
       type: Date,
       default: Date.now,
-    }, 
-
-    // Used for password reset feature
-    resetPasswordToken: String,
-    resetPasswordExpire: Date,
+    },
   },
   {
-    timestamps: true, // Automatically adds createdAt & updatedAt
+    timestamps: true,
   },
 );
 
 // ================= PASSWORD HASHING MIDDLEWARE =================
-//
-// Hashes password before saving user
-// Runs only when password is created or updated
+// ✅ FIXED: Removed 'next' parameter (modern async/await style)
 
-UserSchema.pre("save", async function (next) {
+UserSchema.pre("save", async function () {
+  // Only hash if password is modified
   if (!this.isModified("password")) {
-    return ;
+    return;
   }
 
-  // const salt =  bcrypt.getSalt(10); giving error as not a function in bcryptjs
-  this.password = await bcrypt.hash(this.password, 10);
+  // Hash password with bcrypt
+  const salt = await bcrypt.genSalt(10);
+  this.password = await bcrypt.hash(this.password, salt);
 });
 
 // ================= INSTANCE METHODS =================
 
-// Generate JWT token for authentication
-
+// Generate JWT token
 UserSchema.methods.getSignedJwtToken = function () {
   return jwt.sign(
-    { id: this._id }, // Token payload (user identifier)
-    process.env.JWT_SECRET, // Secret key
-    { expiresIn: process.env.JWT_EXPIRE }, // Token expiry time
+    { id: this._id },
+    process.env.JWT_SECRET,
+    {
+      expiresIn: process.env.JWT_EXPIRE || "7d",
+    },
   );
 };
 
-// Compare entered password with hashed password in database
+// Compare password
 UserSchema.methods.comparePassword = async function (enteredPassword) {
   return await bcrypt.compare(enteredPassword, this.password);
 };
 
-// Generate password reset token and expiry time
+// Generate password reset token
 UserSchema.methods.generatePasswordResetToken = function () {
-  // Create random reset token
   const resetToken = crypto.randomBytes(20).toString("hex");
 
-  // Hash token before saving to database
   this.resetPasswordToken = crypto
     .createHash("sha256")
     .update(resetToken)
     .digest("hex");
 
-  // Token expires in 10 minutes
   this.resetPasswordExpire = Date.now() + 10 * 60 * 1000;
 
-  // Return raw token to send via email
   return resetToken;
 };
 
-UserSchema.methods.generateEmailVerificationToken = function() {
-  // Generate random token
-  const verificationToken = crypto.randomBytes(32).toString('hex');
-  
-  // Hash token and save to database
+// Generate email verification token
+// UserSchema.methods.generateEmailVerificationToken = function () {
+//   const verificationToken = crypto.randomBytes(32).toString("hex");
+
+//   this.emailVerificationToken = crypto
+//     .createHash("sha256")
+//     .update(verificationToken)
+//     .digest("hex");
+
+//   this.emailVerificationExpire = Date.now() + 24 * 60 * 60 * 1000;
+
+//   return verificationToken;
+// };
+UserSchema.methods.generateEmailVerificationToken = function () {
+  const verificationToken = crypto.randomBytes(32).toString("hex");
+
   this.emailVerificationToken = crypto
-    .createHash('sha256')
+    .createHash("sha256")
     .update(verificationToken)
-    .digest('hex');
-  
-  // Set expiry (24 hours)
+    .digest("hex");
+
   this.emailVerificationExpire = Date.now() + 24 * 60 * 60 * 1000;
-  
-  return verificationToken; // Return unhashed token (sent via email)
+
+  return verificationToken;
 };
+
+// ================= SECURITY =================
+
+UserSchema.set("toJSON", {
+  transform: function (doc, ret) {
+    delete ret.password;
+    return ret;
+  },
+});
 
 // ================= EXPORT MODEL =================
 
-// Export User model to be used across the app
 export default mongoose.model("User", UserSchema);
