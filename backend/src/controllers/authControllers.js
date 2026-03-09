@@ -36,35 +36,129 @@ const sendTokenResponse = (user, statusCode, res) => {
 
 // ================= VERIFY EMAIL =================
 
-export const verifyEmail = async (req, res, next) => {
-  try {
-    const hashedToken = crypto
-      .createHash("sha256")
-      .update(req.params.token)
-      .digest("hex");
+// export const verifyEmail = async (req, res, next) => {
+//   try {
+//     const hashedToken = crypto
+//       .createHash("sha256")
+//       .update(req.params.token)
+//       .digest("hex");
 
+//     const user = await User.findOne({
+//       emailVerificationToken: hashedToken,
+//       emailVerificationExpire: { $gt: Date.now() },
+//     });
+
+//     if (!user) {
+//       return next(new ErrorResponse("Invalid or expired token", 400));
+//     }
+
+//     user.isEmailVerified = true;
+//     user.emailVerificationToken = undefined;
+//     user.emailVerificationExpire = undefined;
+
+//     await user.save();
+
+//     sendTokenResponse(user, 200, res);
+//   } catch (error) {
+//     next(error);
+//   }
+// };
+export const verifyEmail = async (req, res) => {
+  try {
+    const { token } = req.params;
+
+    console.log("📧 Received token:", token);
+
+    // Hash the token from URL
+    const hashedToken = crypto.createHash("sha256").update(token).digest("hex");
+
+    console.log("🔐 Hashed token:", hashedToken);
+
+    // Find user
     const user = await User.findOne({
       emailVerificationToken: hashedToken,
       emailVerificationExpire: { $gt: Date.now() },
     });
 
+    console.log("👤 User found:", user ? "YES" : "NO");
+
     if (!user) {
-      return next(new ErrorResponse("Invalid or expired token", 400));
+      return res.status(400).json({
+        success: false,
+        message: "Invalid or expired verification token",
+      });
     }
 
+    // Update user
     user.isEmailVerified = true;
     user.emailVerificationToken = undefined;
     user.emailVerificationExpire = undefined;
 
     await user.save();
 
-    sendTokenResponse(user, 200, res);
+    console.log("✅ Email verified successfully");
+
+    res.status(200).json({
+      success: true,
+      message: "Email verified successfully!",
+      data: {
+        isEmailVerified: true,
+      },
+    });
   } catch (error) {
-    next(error);
+    console.error("❌ Verification error:", error);
+
+    res.status(500).json({
+      success: false,
+      message: error.message,
+    });
   }
 };
 
 // ================= RESEND VERIFICATION =================
+
+// export const resendVerificationEmail = async (req, res, next) => {
+//   try {
+//     const { email } = req.body;
+
+//     const user = await User.findOne({ email });
+
+//     if (!user) {
+//       return next(new ErrorResponse("No user found with this email", 404));
+//     }
+
+//     if (user.isEmailVerified) {
+//       return next(new ErrorResponse("Email already verified", 400));
+//     }
+
+//     const verificationToken = user.generateEmailVerificationToken();
+
+//     const verificationUrl = `${process.env.CLIENT_URL}/verify-email/${verificationToken}`;
+
+//     const message = `
+//       <h1>Email Verification</h1>
+//       <p>Hi ${user.name},</p>
+//       <p>Click below to verify your email:</p>
+//       <a href="${verificationUrl}">Verify Email</a>
+//       <p>This link will expire in 24 hours.</p>
+//     `;
+
+//     await sendEmail({
+//       email: user.email,
+//       subject: "Email Verification",
+//       html: message,
+//     });
+
+//     await user.save({ validateBeforeSave: false });
+
+//     res.status(200).json({
+//       success: true,
+//       message: "Verification email sent successfully",
+//     });
+//   } catch (error) {
+//     next(error);
+//   }
+// };
 
 export const resendVerificationEmail = async (req, res, next) => {
   try {
@@ -80,30 +174,48 @@ export const resendVerificationEmail = async (req, res, next) => {
       return next(new ErrorResponse("Email already verified", 400));
     }
 
+    // Generate new token
     const verificationToken = user.generateEmailVerificationToken();
 
     const verificationUrl = `${process.env.CLIENT_URL}/verify-email/${verificationToken}`;
 
     const message = `
       <h1>Email Verification</h1>
-      <p>Hi ${user.name},</p>
-      <p>Click below to verify your email:</p>
-      <a href="${verificationUrl}">Verify Email</a>
+      <p>Hello ${user.name},</p>
+      <p>Please verify your email by clicking the button below:</p>
+
+      <a href="${verificationUrl}" 
+      style="display:inline-block;padding:10px 20px;background:#4F46E5;color:#fff;text-decoration:none;border-radius:5px;">
+        Verify Email
+      </a>
+
       <p>This link will expire in 24 hours.</p>
+      <p>If you did not request this email, please ignore it.</p>
     `;
 
-    await sendEmail({
-      email: user.email,
-      subject: "Email Verification",
-      html: message,
-    });
-
+    // Save token first
     await user.save({ validateBeforeSave: false });
 
-    res.status(200).json({
-      success: true,
-      message: "Verification email sent successfully",
-    });
+    try {
+      await sendEmail({
+        email: user.email,
+        subject: "Verify Your Email",
+        html: message,
+      });
+
+      res.status(200).json({
+        success: true,
+        message: "Verification email sent successfully",
+      });
+    } catch (err) {
+      // Remove token if email fails
+      user.emailVerificationToken = undefined;
+      user.emailVerificationExpire = undefined;
+
+      await user.save({ validateBeforeSave: false });
+
+      return next(new ErrorResponse("Email could not be sent", 500));
+    }
   } catch (error) {
     next(error);
   }
@@ -276,8 +388,7 @@ export const register = async (req, res, next) => {
     // Save token to DB
     await user.save({ validateBeforeSave: false });
 
-    const verificationUrl =
-      `${process.env.CLIENT_URL}/verify-email/${verificationToken}`;
+    const verificationUrl = `${process.env.CLIENT_URL}/verify-email/${verificationToken}`;
 
     await sendEmail({
       email: user.email,
@@ -300,47 +411,94 @@ export const register = async (req, res, next) => {
 };
 
 // ================= LOGIN =================
+// export const login = async (req, res, next) => {
+//   try {
+//     const { email, password } = req.body;
+
+//     console.log("Login attempt for:", email); // Debug
+
+//     if (!email || !password) {
+//       return next(new ErrorResponse("Email and password required", 400));
+//     }
+
+//     if (!user.isEmailVerified) {
+//       return next(
+//         new ErrorResponse("Please verify your email before logging in", 403),
+//       );
+//     }
+
+//     sendTokenResponse(user, 200, res);
+
+//     // Find user with password field
+//     const user = await User.findOne({ email }).select("+password");
+
+//     if (!user) {
+//       console.log("User not found"); // Debug
+//       return next(new ErrorResponse("Invalid credentials", 401));
+//     }
+
+//     console.log("User found, checking password..."); // Debug
+
+//     // Check password
+//     const isPasswordCorrect = await user.comparePassword(password);
+
+//     console.log("Password match:", isPasswordCorrect); // Debug
+
+//     if (!isPasswordCorrect) {
+//       console.log("Password incorrect"); // Debug
+//       return next(new ErrorResponse("Invalid credentials", 401));
+//     }
+
+//     // Skip email verification check for now
+//     console.log("Login successful!"); // Debug
+
+//     sendTokenResponse(user, 200, res);
+//   } catch (error) {
+//     console.error("Login error:", error);
+//     next(error);
+//   }
+// };
+// ================= LOGIN =================
 export const login = async (req, res, next) => {
   try {
     const { email, password } = req.body;
 
-    console.log("Login attempt for:", email); // Debug
+    console.log("Login attempt for:", email);
 
     if (!email || !password) {
       return next(new ErrorResponse("Email and password required", 400));
     }
 
+    // 1️⃣ Find user
+    const user = await User.findOne({ email }).select("+password");
+
+    if (!user) {
+      console.log("User not found");
+      return next(new ErrorResponse("Invalid credentials", 401));
+    }
+
+    console.log("User found, checking password...");
+
+    // 2️⃣ Check password
+    const isPasswordCorrect = await user.comparePassword(password);
+
+    console.log("Password match:", isPasswordCorrect);
+
+    if (!isPasswordCorrect) {
+      console.log("Password incorrect");
+      return next(new ErrorResponse("Invalid credentials", 401));
+    }
+
+    // 3️⃣ Check email verification
     if (!user.isEmailVerified) {
       return next(
         new ErrorResponse("Please verify your email before logging in", 403),
       );
     }
 
-    sendTokenResponse(user, 200, res);
+    console.log("Login successful!");
 
-    // Find user with password field
-    const user = await User.findOne({ email }).select("+password");
-
-    if (!user) {
-      console.log("User not found"); // Debug
-      return next(new ErrorResponse("Invalid credentials", 401));
-    }
-
-    console.log("User found, checking password..."); // Debug
-
-    // Check password
-    const isPasswordCorrect = await user.comparePassword(password);
-
-    console.log("Password match:", isPasswordCorrect); // Debug
-
-    if (!isPasswordCorrect) {
-      console.log("Password incorrect"); // Debug
-      return next(new ErrorResponse("Invalid credentials", 401));
-    }
-
-    // Skip email verification check for now
-    console.log("Login successful!"); // Debug
-
+    // 4️⃣ Send token
     sendTokenResponse(user, 200, res);
   } catch (error) {
     console.error("Login error:", error);

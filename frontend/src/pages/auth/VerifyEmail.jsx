@@ -1,67 +1,137 @@
-import { useEffect, useState } from 'react';
-import { useParams, useNavigate } from 'react-router-dom';
-import { FiCheckCircle, FiXCircle } from 'react-icons/fi';
-import api from '../../utils/api';
+import { useEffect, useState, useRef } from "react";
+import { useParams, useNavigate, Link } from "react-router-dom";
+import { CheckCircle, XCircle, Loader } from "lucide-react";
 
 const VerifyEmail = () => {
   const { token } = useParams();
   const navigate = useNavigate();
-  const [status, setStatus] = useState('verifying'); // verifying, success, error
+  const called = useRef(false);
+
+  const [status, setStatus] = useState("verifying"); // verifying | success | error
+  const [message, setMessage] = useState("");
 
   useEffect(() => {
+    if (!token) return;
+
+    // Prevent double API call (React StrictMode)
+    if (called.current) return;
+    called.current = true;
+
+    const verifyEmail = async () => {
+      try {
+        console.log("🔍 Verifying token:", token);
+
+        const response = await fetch(
+          `http://localhost:5000/api/auth/verify-email/${token}`,
+          {
+            method: "GET",
+            headers: {
+              "Content-Type": "application/json",
+            },
+          }
+        );
+
+        const data = await response.json();
+        console.log("📥 Response:", data);
+
+        if (response.ok && data.success) {
+          setStatus("success");
+          setMessage(data.message || "Email verified successfully!");
+
+          // Redirect after 3 seconds
+          setTimeout(() => {
+            navigate("/login");
+          }, 3000);
+        } else {
+          setStatus("error");
+          setMessage(data.message || "Email verification failed");
+        }
+      } catch (error) {
+        console.error("❌ Verification error:", error);
+        setStatus("error");
+        setMessage("Email verification failed. Please try again.");
+      }
+    };
+
     verifyEmail();
-  }, []);
-
-  const verifyEmail = async () => {
-    try {
-      const { data } = await api.get(`/auth/verify-email/${token}`);
-      setStatus('success');
-      
-      // Save token and redirect after 2 seconds
-      localStorage.setItem('token', data.token);
-      setTimeout(() => {
-        navigate('/app/dashboard');
-      }, 2000);
-    } catch (error) {
-      setStatus('error');
-    }
-  };
-
-  if (status === 'verifying') {
-    return (
-      <div className="min-h-screen flex items-center justify-center bg-gray-50">
-        <div className="text-center">
-          <div className="w-16 h-16 border-4 border-blue-200 border-t-blue-600 rounded-full animate-spin mx-auto mb-4"></div>
-          <p className="text-gray-600">Verifying your email...</p>
-        </div>
-      </div>
-    );
-  }
-
-  if (status === 'success') {
-    return (
-      <div className="min-h-screen flex items-center justify-center bg-gray-50">
-        <div className="text-center">
-          <FiCheckCircle className="w-16 h-16 text-green-600 mx-auto mb-4" />
-          <h2 className="text-2xl font-bold text-gray-900 mb-2">Email Verified!</h2>
-          <p className="text-gray-600">Redirecting to dashboard...</p>
-        </div>
-      </div>
-    );
-  }
+  }, [token, navigate]);
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gray-50">
-      <div className="text-center">
-        <FiXCircle className="w-16 h-16 text-red-600 mx-auto mb-4" />
-        <h2 className="text-2xl font-bold text-gray-900 mb-2">Verification Failed</h2>
-        <p className="text-gray-600 mb-4">Invalid or expired link</p>
-        <button
-          onClick={() => navigate('/login')}
-          className="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
-        >
-          Go to Login
-        </button>
+    <div className="min-h-screen flex items-center justify-center bg-gray-50 dark:bg-gray-900 px-4">
+      <div className="max-w-md w-full">
+        <div className="bg-white dark:bg-gray-800 rounded-lg shadow-md p-8 text-center">
+
+          {/* Verifying */}
+          {status === "verifying" && (
+            <>
+              <Loader className="w-16 h-16 mx-auto mb-4 text-primary-600 animate-spin" />
+              <h2 className="text-2xl font-bold mb-2 text-gray-900 dark:text-white">
+                Verifying Email...
+              </h2>
+              <p className="text-gray-600 dark:text-gray-400">
+                Please wait while we verify your email address.
+              </p>
+            </>
+          )}
+
+          {/* Success */}
+          {status === "success" && (
+            <>
+              <CheckCircle className="w-16 h-16 mx-auto mb-4 text-green-600" />
+              <h2 className="text-2xl font-bold mb-2 text-green-600">
+                Email Verified! 🎉
+              </h2>
+              <p className="text-gray-600 dark:text-gray-400 mb-4">
+                {message}
+              </p>
+              <p className="text-sm text-gray-500 mb-4">
+                Redirecting to login page in 3 seconds...
+              </p>
+
+              <Link
+                to="/login"
+                className="inline-block bg-primary-600 hover:bg-primary-700 text-white font-medium py-2 px-6 rounded-lg transition-colors"
+              >
+                Go to Login Now
+              </Link>
+            </>
+          )}
+
+          {/* Error */}
+          {status === "error" && (
+            <>
+              <XCircle className="w-16 h-16 mx-auto mb-4 text-red-600" />
+              <h2 className="text-2xl font-bold mb-2 text-red-600">
+                Verification Failed
+              </h2>
+
+              <p className="text-gray-600 dark:text-gray-400 mb-4">
+                {message}
+              </p>
+
+              <p className="text-sm text-gray-500 mb-4">
+                The verification link may have expired or is invalid.
+              </p>
+
+              <div className="flex gap-3 justify-center">
+                <Link
+                  to="/signup"
+                  className="bg-primary-600 hover:bg-primary-700 text-white font-medium py-2 px-4 rounded-lg transition-colors"
+                >
+                  Sign Up Again
+                </Link>
+
+                <Link
+                  to="/login"
+                  className="bg-gray-200 hover:bg-gray-300 dark:bg-gray-700 dark:hover:bg-gray-600 text-gray-900 dark:text-gray-100 font-medium py-2 px-4 rounded-lg transition-colors"
+                >
+                  Back to Login
+                </Link>
+              </div>
+            </>
+          )}
+
+        </div>
       </div>
     </div>
   );

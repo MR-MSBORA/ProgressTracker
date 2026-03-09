@@ -41,6 +41,7 @@ const skillSchema = new mongoose.Schema(
     category: {
       type: String,
       enum: [
+        "technical",
         "programming",
         "language",
         "music",

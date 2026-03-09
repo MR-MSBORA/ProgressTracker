@@ -1,4 +1,4 @@
-// import { createContext, useState, useEffect, useContext } from 'react';
+// import { createContext, useContext, useEffect, useState } from 'react';
 
 // const ThemeContext = createContext();
 
@@ -11,44 +11,44 @@
 // };
 
 // export const ThemeProvider = ({ children }) => {
-//   const [isDark, setIsDark] = useState(() => {
-//     // Check localStorage first
-//     const saved = localStorage.getItem('theme');
-//     if (saved) return saved === 'dark';
-    
-//     // Check system preference
-//     return window.matchMedia('(prefers-color-scheme: dark)').matches;
+//   const [theme, setTheme] = useState(() => {
+//     // Get theme from localStorage or default to 'light'
+//     const savedTheme = localStorage.getItem('theme');
+//     return savedTheme || 'light';
 //   });
 
 //   useEffect(() => {
-//     // Update document class for Tailwind
-//     if (isDark) {
-//       document.documentElement.classList.add('dark');
-//     } else {
-//       document.documentElement.classList.remove('dark');
-//     }
+//     // Apply theme to document
+//     const root = window.document.documentElement;
     
-//     // Save preference to localStorage
-//     localStorage.setItem('theme', isDark ? 'dark' : 'light');
-//   }, [isDark]);
+//     if (theme === 'dark') {
+//       root.classList.add('dark');
+//     } else {
+//       root.classList.remove('dark');
+//     }
+
+//     // Save to localStorage
+//     localStorage.setItem('theme', theme);
+//   }, [theme]);
 
 //   const toggleTheme = () => {
-//     setIsDark((prev) => !prev);
+//     setTheme(prevTheme => prevTheme === 'light' ? 'dark' : 'light');
 //   };
 
-//   const value = {
-//     isDark,
-//     toggleTheme,
-//   };
-
-//   return <ThemeContext.Provider value={value}>{children}</ThemeContext.Provider>;
+//   return (
+//     <ThemeContext.Provider value={{ theme, toggleTheme }}>
+//       {children}
+//     </ThemeContext.Provider>
+//   );
 // };
 
 
 
 
 
-import { createContext, useState, useEffect, useContext } from 'react';
+
+
+import { createContext, useContext, useEffect, useState } from 'react';
 
 const ThemeContext = createContext();
 
@@ -61,27 +61,38 @@ export const useTheme = () => {
 };
 
 export const ThemeProvider = ({ children }) => {
-  const [isDark, setIsDark] = useState(() => {
-    const saved = localStorage.getItem('theme');
-    if (saved) return saved === 'dark';
-    return window.matchMedia('(prefers-color-scheme: dark)').matches;
+  const [theme, setTheme] = useState(() => {
+    const savedTheme = localStorage.getItem('theme');
+    return savedTheme || 'light';
   });
 
   useEffect(() => {
-    if (isDark) {
-      document.documentElement.classList.add('dark');
-    } else {
-      document.documentElement.classList.remove('dark');
-    }
-    localStorage.setItem('theme', isDark ? 'dark' : 'light');
-  }, [isDark]);
+    const root = document.documentElement;
+    
+    // Add changing class to prevent transitions during theme switch
+    root.classList.add('changing-theme');
+    
+    // Remove both theme classes
+    root.classList.remove('light', 'dark');
+    
+    // Add current theme class
+    root.classList.add(theme);
+    
+    // Save to localStorage
+    localStorage.setItem('theme', theme);
+    
+    // Remove changing class after a brief delay
+    setTimeout(() => {
+      root.classList.remove('changing-theme');
+    }, 50);
+  }, [theme]);
 
   const toggleTheme = () => {
-    setIsDark((prev) => !prev);
+    setTheme(prevTheme => prevTheme === 'light' ? 'dark' : 'light');
   };
 
   return (
-    <ThemeContext.Provider value={{ isDark, toggleTheme }}>
+    <ThemeContext.Provider value={{ theme, toggleTheme }}>
       {children}
     </ThemeContext.Provider>
   );
