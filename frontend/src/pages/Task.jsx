@@ -4,6 +4,7 @@ import { TaskProvider, useTask } from '../context/TaskContext';
 import AddTaskForm from '../components/tasks/AddTaskForm';
 import TaskList from '../components/tasks/TaskList';
 import DailyScore from '../components/tasks/DailyScore';
+import { FiCheckSquare } from 'react-icons/fi';
 
 const TasksContent = () => {
   const [showAddForm, setShowAddForm] = useState(false);

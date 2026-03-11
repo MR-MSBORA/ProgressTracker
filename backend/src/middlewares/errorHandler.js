@@ -1,4 +1,127 @@
-// Import logger (ES6)
+// import logger from '../config/logger.js';
+
+// /* =================================
+//    Custom Error Class
+// ================================= */
+// export class AppError extends Error {
+//   constructor(message, statusCode) {
+//     super(message);
+
+//     this.statusCode = statusCode;
+//     this.isOperational = true;
+
+//     Error.captureStackTrace(this, this.constructor);
+//   }
+// }
+
+// /* =================================
+//    Not Found Middleware (404)
+// ================================= */
+// export const notFound = (req, res, next) => {
+//   const error = new AppError(`Route not found - ${req.originalUrl}`, 404);
+//   next(error);
+// };
+
+// /* =================================
+//    Global Error Handler
+// ================================= */
+// export const errorHandler = (err, req, res, next) => {
+
+//   let error = { ...err };
+//   error.message = err.message;
+//   error.statusCode = err.statusCode || 500;
+
+//   /* =================================
+//      PRINT FULL ERROR IN TERMINAL
+//   ================================= */
+
+//   console.log("\n========================================");
+//   console.log("🔥 GLOBAL ERROR HANDLER");
+//   console.log("Route   :", req.method, req.originalUrl);
+//   console.log("IP      :", req.ip);
+//   console.log("Message :", err.message);
+//   console.log("Type    :", err.name);
+//   console.log("Stack ↓ ");
+//   console.log(err.stack);
+//   console.log("========================================\n");
+
+//   /* =================================
+//      Logger (File / Winston / etc)
+//   ================================= */
+
+//   logger.error({
+//     message: err.message,
+//     stack: err.stack,
+//     url: req.originalUrl,
+//     method: req.method,
+//     ip: req.ip,
+//     statusCode: error.statusCode
+//   });
+
+//   /* =================================
+//      Handle Known Errors
+//   ================================= */
+
+//   // Invalid Mongo ObjectId
+//   if (err.name === 'CastError') {
+//     error = new AppError('Resource not found', 404);
+//   }
+
+//   // Duplicate key error
+//   if (err.code === 11000) {
+//     const field = Object.keys(err.keyValue)[0];
+//     const message =
+//       `${field.charAt(0).toUpperCase() + field.slice(1)} already exists`;
+
+//     error = new AppError(message, 400);
+//   }
+
+//   // Validation error
+//   if (err.name === 'ValidationError') {
+//     const message = Object.values(err.errors)
+//       .map(val => val.message)
+//       .join(', ');
+
+//     error = new AppError(message, 400);
+//   }
+
+//   // JWT invalid
+//   if (err.name === 'JsonWebTokenError') {
+//     error = new AppError('Invalid token. Please log in again.', 401);
+//   }
+
+//   // JWT expired
+//   if (err.name === 'TokenExpiredError') {
+//     error = new AppError('Token expired. Please log in again.', 401);
+//   }
+
+//   /* =================================
+//      Send Error Response
+//   ================================= */
+
+//   res.status(error.statusCode).json({
+//     success: false,
+//     message: error.message || 'Server Error',
+
+//     ...(process.env.NODE_ENV === 'development' && {
+//       stack: err.stack,
+//       error: err
+//     })
+//   });
+
+// };
+
+// /* =================================
+//    Async Wrapper (Avoid Try-Catch)
+// ================================= */
+
+// export const asyncHandler = (fn) => (req, res, next) => {
+//   Promise
+//     .resolve(fn(req, res, next))
+//     .catch(next);
+// };
+
+
 import logger from '../config/logger.js';
 
 /* =================================
@@ -7,8 +130,9 @@ import logger from '../config/logger.js';
 export class AppError extends Error {
   constructor(message, statusCode) {
     super(message);
-    this.statusCode = statusCode;   // HTTP status code
-    this.isOperational = true;      // Known/handled error
+
+    this.statusCode = statusCode;
+    this.isOperational = true;
 
     Error.captureStackTrace(this, this.constructor);
   }
@@ -19,19 +143,39 @@ export class AppError extends Error {
 ================================= */
 export const notFound = (req, res, next) => {
   const error = new AppError(`Route not found - ${req.originalUrl}`, 404);
-  next(error); // Pass to global error handler
+  next(error);
 };
 
 /* =================================
    Global Error Handler
 ================================= */
 export const errorHandler = (err, req, res, next) => {
+
   let error = { ...err };
   error.message = err.message;
   error.statusCode = err.statusCode || 500;
 
-  // Log error details
+  /* =================================
+     PRINT FULL ERROR IN TERMINAL
+  ================================= */
+
+  console.log("\n========================================");
+  console.log("🔥 GLOBAL ERROR HANDLER");
+  console.log("Route   :", req.method, req.originalUrl);
+  console.log("IP      :", req.ip);
+  console.log("Name    :", err.name);
+  console.log("Message :", err.message);
+  console.log("Type    :", typeof err);
+  console.log("Stack ↓ ");
+  console.log(err.stack);
+  console.log("========================================\n");
+
+  /* =================================
+     Logger (Winston / File etc)
+  ================================= */
+
   logger.error({
+    name: err.name,
     message: err.message,
     stack: err.stack,
     url: req.originalUrl,
@@ -40,55 +184,70 @@ export const errorHandler = (err, req, res, next) => {
     statusCode: error.statusCode
   });
 
-  /* ===== Handle Specific Errors ===== */
+  /* =================================
+     Handle Known Errors
+  ================================= */
 
-  // Mongoose invalid ObjectId
+  // Invalid Mongo ObjectId
   if (err.name === 'CastError') {
     error = new AppError('Resource not found', 404);
   }
 
-  // Mongoose duplicate key
+  // Duplicate key error
   if (err.code === 11000) {
     const field = Object.keys(err.keyValue)[0];
-    const message = `${field.charAt(0).toUpperCase() + field.slice(1)} already exists`;
+    const message =
+      `${field.charAt(0).toUpperCase() + field.slice(1)} already exists`;
+
     error = new AppError(message, 400);
   }
 
-  // Mongoose validation error
+  // Validation error
   if (err.name === 'ValidationError') {
     const message = Object.values(err.errors)
       .map(val => val.message)
       .join(', ');
+
     error = new AppError(message, 400);
   }
 
-  // JWT invalid token
+  // JWT invalid
   if (err.name === 'JsonWebTokenError') {
     error = new AppError('Invalid token. Please log in again.', 401);
   }
 
-  // JWT expired token
+  // JWT expired
   if (err.name === 'TokenExpiredError') {
     error = new AppError('Token expired. Please log in again.', 401);
   }
 
-  // Send error response
+  /* =================================
+     Send Error Response
+  ================================= */
+
   res.status(error.statusCode).json({
     success: false,
-    message: error.message || 'Server Error',
 
-    // Show stack only in development
+    // Main message
+    message: error.message || "Server Error",
+
+    // Show detailed error only in development
     ...(process.env.NODE_ENV === 'development' && {
+      errorName: err.name,
+      errorMessage: err.message,
       stack: err.stack,
-      error: err
+      fullError: err
     })
   });
+
 };
 
 /* =================================
-   Async Handler Wrapper
+   Async Wrapper (Avoid Try-Catch)
 ================================= */
-// Avoid try-catch in controllers
+
 export const asyncHandler = (fn) => (req, res, next) => {
-  Promise.resolve(fn(req, res, next)).catch(next);
+  Promise
+    .resolve(fn(req, res, next))
+    .catch(next);
 };

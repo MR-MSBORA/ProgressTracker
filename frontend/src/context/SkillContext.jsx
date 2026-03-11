@@ -20,12 +20,33 @@ export const SkillProvider = ({ children }) => {
   });
 
   // Fetch skills
+  // const fetchSkills = async () => {
+  //   try {
+  //     setLoading(true);
+  //     const params = new URLSearchParams();
+  //     if (filters.category !== 'all') params.append('category', filters.category);
+  //     if (filters.level !== 'all') params.append('level', filters.level);
+
+  //     const { data } = await api.get(`/skills?${params.toString()}`);
+  //     setSkills(data.data || []);
+  //   } catch (error) {
+  //     console.error('Fetch skills error:', error);
+  //     setSkills([]);
+  //   } finally {
+  //     setLoading(false);
+  //   }
+  // };
   const fetchSkills = async () => {
     try {
       setLoading(true);
       const params = new URLSearchParams();
-      if (filters.category !== 'all') params.append('category', filters.category);
-      if (filters.level !== 'all') params.append('level', filters.level);
+
+      if (filters.category && filters.category !== 'all') {
+        params.append('category', filters.category);
+      }
+      if (filters.level && filters.level !== 'all') {
+        params.append('level', filters.level);
+      }
 
       const { data } = await api.get(`/skills?${params.toString()}`);
       setSkills(data.data || []);

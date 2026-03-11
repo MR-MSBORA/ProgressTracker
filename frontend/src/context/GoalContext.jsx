@@ -19,21 +19,41 @@ export const GoalProvider = ({ children }) => {
   const [filter, setFilter] = useState('all'); // all, active, completed, failed
 
   // Fetch all goals
+  // const fetchGoals = async () => {
+  //   try {
+  //     setLoading(true);
+  //     const params = new URLSearchParams();
+  //     if (filter !== 'all') params.append('status', filter);
+
+  //     const { data } = await api.get(`/goals?${params.toString()}`);
+  //     setGoals(data.data || []);
+  //   } catch (error) {
+  //     console.error('Error fetching goals:', error);
+  //     toast.error('Failed to load goals');
+  //   } finally {
+  //     setLoading(false);
+  //   }
+  // };
   const fetchGoals = async () => {
     try {
       setLoading(true);
       const params = new URLSearchParams();
-      if (filter !== 'all') params.append('status', filter);
+
+      // Only filter by status if not 'all'
+      if (filter !== 'all') {
+        params.append('status', filter);
+      }
 
       const { data } = await api.get(`/goals?${params.toString()}`);
       setGoals(data.data || []);
     } catch (error) {
-      console.error('Error fetching goals:', error);
-      toast.error('Failed to load goals');
+      console.error('Fetch goals error:', error);
+      setGoals([]);
     } finally {
       setLoading(false);
     }
   };
+
 
   // Fetch goal statistics
   const fetchStats = async () => {

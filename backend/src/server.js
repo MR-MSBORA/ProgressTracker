@@ -91,7 +91,7 @@ app.use("/api/tasks", taskRoutes);
 app.use("/api/goals", goalRoutes);
 app.use("/api/skills", skillRoutes);
 app.use("/api/reflections", reflectionRoutes);
-app.use("/api/analytic", analyticRoutes);
+app.use("/api/analytics", analyticRoutes);
 
 
 // ================= HEALTH CHECK =================
