@@ -223,36 +223,122 @@ export const resendVerificationEmail = async (req, res, next) => {
 
 // ================= FORGOT PASSWORD =================
 
-export const forgotPassword = async (req, res) => {
+// export const forgotPassword = async (req, res) => {
+//   try {
+//     const { email } = req.body;
+
+//     const user = await User.findOne({ email });
+//     if (!user) {
+//       return res
+//         .status(404)
+//         .json({ success: false, message: "User not found" });
+//     }
+
+//     const resetToken = user.generatePasswordResetToken();
+//     await user.save({ validateBeforeSave: false });
+
+//     const resetUrl = `${process.env.CLIENT_URL}/reset-password/${resetToken}`;
+
+//     await sendEmail({
+//       email: user.email,
+//       subject: "Password Reset",
+//       html: `
+//         <p>Click the link below to reset your password:</p>
+//         <a href="${resetUrl}">Reset Password</a>
+//       `,
+//     });
+
+//     res
+//       .status(200)
+//       .json({ success: true, message: "Password reset email sent" });
+//   } catch (error) {
+//     res.status(500).json({ success: false, message: error.message });
+//   }
+// };
+// ================= FORGOT PASSWORD =================
+export const forgotPassword = async (req, res, next) => {
   try {
     const { email } = req.body;
 
-    const user = await User.findOne({ email });
-    if (!user) {
-      return res
-        .status(404)
-        .json({ success: false, message: "User not found" });
+    if (!email) {
+      return next(new ErrorResponse("Please provide an email", 400));
     }
 
+    const user = await User.findOne({ email });
+
+    if (!user) {
+      // Don't reveal if user exists
+      return res.status(200).json({
+        success: true,
+        message: "If that email exists, a reset link has been sent",
+      });
+    }
+
+    // Generate reset token
     const resetToken = user.generatePasswordResetToken();
     await user.save({ validateBeforeSave: false });
 
+    // Create reset URL
     const resetUrl = `${process.env.CLIENT_URL}/reset-password/${resetToken}`;
 
-    await sendEmail({
-      email: user.email,
-      subject: "Password Reset",
-      html: `
-        <p>Click the link below to reset your password:</p>
-        <a href="${resetUrl}">Reset Password</a>
-      `,
-    });
+    console.log("\n========================================");
+    console.log("🔗 PASSWORD RESET LINK (COPY THIS):");
+    console.log(resetUrl);
+    console.log("========================================\n");
 
-    res
-      .status(200)
-      .json({ success: true, message: "Password reset email sent" });
+    // Try to send email
+    try {
+      await sendEmail({
+        email: user.email,
+        subject: "Password Reset - Progressly",
+        html: `
+          <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+            <h1 style="color: #3b82f6;">Password Reset Request</h1>
+            <p>You requested a password reset for your Progressly account.</p>
+            <p>Click the button below to reset your password:</p>
+            <a href="${resetUrl}" 
+               style="display: inline-block; padding: 12px 24px; background-color: #3b82f6; color: white; text-decoration: none; border-radius: 8px; margin: 16px 0;">
+              Reset Password
+            </a>
+            <p>Or copy and paste this link in your browser:</p>
+            <p style="color: #6b7280; word-break: break-all;">${resetUrl}</p>
+            <p style="color: #ef4444; font-weight: bold;">This link will expire in 10 minutes.</p>
+            <p style="color: #6b7280; font-size: 14px;">If you didn't request this, please ignore this email.</p>
+          </div>
+        `,
+      });
+
+      res.status(200).json({
+        success: true,
+        message: "Password reset email sent! Check your inbox.",
+      });
+    } catch (emailError) {
+      console.error("❌ Email send failed:", emailError.message);
+
+      // Don't delete token - still allow reset via console link
+      // user.resetPasswordToken = undefined;
+      // user.resetPasswordExpire = undefined;
+      // await user.save({ validateBeforeSave: false });
+
+      // For development - still return success and user can use console link
+      if (process.env.NODE_ENV === "development") {
+        return res.status(200).json({
+          success: true,
+          message: "Email service unavailable. Reset link logged to console.",
+          devLink: resetUrl, // Send link in response for dev
+        });
+      }
+
+      return next(
+        new ErrorResponse(
+          "Email could not be sent. Please try again later.",
+          500,
+        ),
+      );
+    }
   } catch (error) {
-    res.status(500).json({ success: false, message: error.message });
+    console.error("Forgot password error:", error);
+    next(error);
   }
 };
 
