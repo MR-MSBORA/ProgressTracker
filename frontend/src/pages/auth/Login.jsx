@@ -1,19 +1,3 @@
-// const Login = () => {
-//   return (
-//     <div className="min-h-screen flex items-center justify-center bg-gray-50 px-4">
-//       <div className="w-full max-w-md bg-white rounded-2xl shadow-lg p-8">
-//         <h1 className="text-3xl font-bold text-center mb-2">Login</h1>
-//         <p className="text-gray-600 text-center mb-6">Welcome back!</p>
-//         <p className="text-center text-gray-500">Login form coming soon...</p>
-//       </div>
-//     </div>
-//   );
-// };
-
-// export default Login;
-
-
-
 import { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { FiMail, FiLock, FiEye, FiEyeOff, FiArrowRight } from 'react-icons/fi';
@@ -171,9 +155,12 @@ const Login = () => {
               </div>
 
               <div className="text-sm">
-                <a href="#" className="font-medium text-blue-600 hover:text-blue-500">
+                <Link
+                  to="/forgot-password"
+                  className="font-medium text-blue-600 hover:text-blue-500"
+                >
                   Forgot password?
-                </a>
+                </Link>
               </div>
             </div>
 

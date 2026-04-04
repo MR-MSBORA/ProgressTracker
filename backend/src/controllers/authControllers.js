@@ -256,17 +256,149 @@ export const resendVerificationEmail = async (req, res, next) => {
 //   }
 // };
 // ================= FORGOT PASSWORD =================
+// export const forgotPassword = async (req, res, next) => {
+//   try {
+//     const { email } = req.body;
+
+//     if (!email) {
+//       return next(new ErrorResponse("Please provide an email", 400));
+//     }
+
+//     const user = await User.findOne({ email });
+
+//     if (!user) {
+//       // Don't reveal if user exists
+//       return res.status(200).json({
+//         success: true,
+//         message: "If that email exists, a reset link has been sent",
+//       });
+//     }
+
+//     // Generate reset token
+//     const resetToken = user.generatePasswordResetToken();
+//     await user.save({ validateBeforeSave: false });
+
+//     // Create reset URL
+//     const resetUrl = `${process.env.CLIENT_URL}/reset-password/${resetToken}`;
+
+//     console.log("\n========================================");
+//     console.log("🔗 PASSWORD RESET LINK (COPY THIS):");
+//     console.log(resetUrl);
+//     console.log("========================================\n");
+
+//     // Try to send email
+//     try {
+//       await sendEmail({
+//         email: user.email,
+//         subject: "Password Reset - Progressly",
+//         html: `
+//           <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+//             <h1 style="color: #3b82f6;">Password Reset Request</h1>
+//             <p>You requested a password reset for your Progressly account.</p>
+//             <p>Click the button below to reset your password:</p>
+//             <a href="${resetUrl}" 
+//                style="display: inline-block; padding: 12px 24px; background-color: #3b82f6; color: white; text-decoration: none; border-radius: 8px; margin: 16px 0;">
+//               Reset Password
+//             </a>
+//             <p>Or copy and paste this link in your browser:</p>
+//             <p style="color: #6b7280; word-break: break-all;">${resetUrl}</p>
+//             <p style="color: #ef4444; font-weight: bold;">This link will expire in 10 minutes.</p>
+//             <p style="color: #6b7280; font-size: 14px;">If you didn't request this, please ignore this email.</p>
+//           </div>
+//         `,
+//       });
+
+//       res.status(200).json({
+//         success: true,
+//         message: "Password reset email sent! Check your inbox.",
+//       });
+//     } catch (emailError) {
+//       console.error("❌ Email send failed:", emailError.message);
+
+//       // Don't delete token - still allow reset via console link
+//       // user.resetPasswordToken = undefined;
+//       // user.resetPasswordExpire = undefined;
+//       // await user.save({ validateBeforeSave: false });
+
+//       // For development - still return success and user can use console link
+//       if (process.env.NODE_ENV === "development") {
+//         return res.status(200).json({
+//           success: true,
+//           message: "Email service unavailable. Reset link logged to console.",
+//           devLink: resetUrl, // Send link in response for dev
+//         });
+//       }
+
+//       return next(
+//         new ErrorResponse(
+//           "Email could not be sent. Please try again later.",
+//           500,
+//         ),
+//       );
+//     }
+//   } catch (error) {
+//     console.error("Forgot password error:", error);
+//     next(error);
+//   }
+// };
+
+// ================= RESET PASSWORD =================
+
+// export const resetPassword = async (req, res) => {
+//   try {
+//     const hashedToken = crypto
+//       .createHash("sha256")
+//       .update(req.params.token)
+//       .digest("hex");
+
+//     const user = await User.findOne({
+//       resetPasswordToken: hashedToken,
+//       resetPasswordExpire: { $gt: Date.now() },
+//     }).select("+password");
+
+//     if (!user) {
+//       return res
+//         .status(400)
+//         .json({ success: false, message: "Invalid or expired token" });
+//     }
+
+//     user.password = req.body.password;
+//     user.resetPasswordToken = undefined;
+//     user.resetPasswordExpire = undefined;
+
+//     await user.save();
+
+//     const token = generateToken(user._id);
+
+//     res.status(200).json({
+//       success: true,
+//       message: "Password reset successful",
+//       data: { token },
+//     });
+//   } catch (error) {
+//     res.status(500).json({ success: false, message: error.message });
+//   }
+// };
+
+
+// ================= FORGOT PASSWORD =================
 export const forgotPassword = async (req, res, next) => {
   try {
     const { email } = req.body;
 
+    console.log("🔑 Forgot password request for:", email);
+
     if (!email) {
-      return next(new ErrorResponse("Please provide an email", 400));
+      return res.status(400).json({
+        success: false,
+        error: "Please provide an email address",
+      });
     }
 
     const user = await User.findOne({ email });
 
     if (!user) {
+      console.log("❌ User not found");
       // Don't reveal if user exists
       return res.status(200).json({
         success: true,
@@ -274,39 +406,59 @@ export const forgotPassword = async (req, res, next) => {
       });
     }
 
+    console.log("✅ User found, generating reset token...");
+
     // Generate reset token
     const resetToken = user.generatePasswordResetToken();
     await user.save({ validateBeforeSave: false });
 
+    console.log("✅ Reset token saved to database");
+
     // Create reset URL
     const resetUrl = `${process.env.CLIENT_URL}/reset-password/${resetToken}`;
 
-    console.log("\n========================================");
-    console.log("🔗 PASSWORD RESET LINK (COPY THIS):");
+    console.log('\n========================================');
+    console.log('🔗 PASSWORD RESET LINK:');
     console.log(resetUrl);
-    console.log("========================================\n");
+    console.log('========================================\n');
 
     // Try to send email
+    const message = `
+      <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px;">
+        <h1 style="color: #3b82f6; margin-bottom: 20px;">Password Reset Request</h1>
+        <p style="font-size: 16px; color: #374151; margin-bottom: 20px;">
+          You requested a password reset for your Progressly account.
+        </p>
+        <p style="font-size: 16px; color: #374151; margin-bottom: 30px;">
+          Click the button below to reset your password:
+        </p>
+        <a href="${resetUrl}" 
+           style="display: inline-block; padding: 14px 28px; background-color: #3b82f6; color: white; text-decoration: none; border-radius: 8px; font-weight: 600; margin-bottom: 30px;">
+          Reset Password
+        </a>
+        <p style="font-size: 14px; color: #6b7280; margin-bottom: 10px;">
+          Or copy and paste this link in your browser:
+        </p>
+        <p style="font-size: 14px; color: #3b82f6; word-break: break-all; margin-bottom: 30px;">
+          ${resetUrl}
+        </p>
+        <p style="font-size: 14px; color: #ef4444; font-weight: 600; margin-bottom: 20px;">
+          ⚠️ This link will expire in 10 minutes.
+        </p>
+        <p style="font-size: 14px; color: #6b7280;">
+          If you didn't request this, please ignore this email and your password will remain unchanged.
+        </p>
+      </div>
+    `;
+
     try {
       await sendEmail({
         email: user.email,
-        subject: "Password Reset - Progressly",
-        html: `
-          <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
-            <h1 style="color: #3b82f6;">Password Reset Request</h1>
-            <p>You requested a password reset for your Progressly account.</p>
-            <p>Click the button below to reset your password:</p>
-            <a href="${resetUrl}" 
-               style="display: inline-block; padding: 12px 24px; background-color: #3b82f6; color: white; text-decoration: none; border-radius: 8px; margin: 16px 0;">
-              Reset Password
-            </a>
-            <p>Or copy and paste this link in your browser:</p>
-            <p style="color: #6b7280; word-break: break-all;">${resetUrl}</p>
-            <p style="color: #ef4444; font-weight: bold;">This link will expire in 10 minutes.</p>
-            <p style="color: #6b7280; font-size: 14px;">If you didn't request this, please ignore this email.</p>
-          </div>
-        `,
+        subject: "Password Reset Request - Progressly",
+        html: message,
       });
+
+      console.log("✅ Email sent successfully");
 
       res.status(200).json({
         success: true,
@@ -315,68 +467,94 @@ export const forgotPassword = async (req, res, next) => {
     } catch (emailError) {
       console.error("❌ Email send failed:", emailError.message);
 
-      // Don't delete token - still allow reset via console link
-      // user.resetPasswordToken = undefined;
-      // user.resetPasswordExpire = undefined;
-      // await user.save({ validateBeforeSave: false });
-
-      // For development - still return success and user can use console link
-      if (process.env.NODE_ENV === "development") {
+      // For development - return link in response
+      if (process.env.NODE_ENV === 'development') {
+        console.log("📧 Email service unavailable - sending link in response");
         return res.status(200).json({
           success: true,
-          message: "Email service unavailable. Reset link logged to console.",
-          devLink: resetUrl, // Send link in response for dev
+          message: "Email service unavailable. Use the link below:",
+          resetUrl: resetUrl,
         });
       }
 
-      return next(
-        new ErrorResponse(
-          "Email could not be sent. Please try again later.",
-          500,
-        ),
-      );
+      // Production - delete token and return error
+      user.resetPasswordToken = undefined;
+      user.resetPasswordExpire = undefined;
+      await user.save({ validateBeforeSave: false });
+
+      return res.status(500).json({
+        success: false,
+        error: "Email could not be sent. Please try again later.",
+      });
     }
   } catch (error) {
-    console.error("Forgot password error:", error);
+    console.error("❌ Forgot password error:", error);
     next(error);
   }
 };
 
 // ================= RESET PASSWORD =================
-
-export const resetPassword = async (req, res) => {
+export const resetPassword = async (req, res, next) => {
   try {
-    const hashedToken = crypto
-      .createHash("sha256")
-      .update(req.params.token)
-      .digest("hex");
+    const { password } = req.body;
+    const { token } = req.params;
 
-    const user = await User.findOne({
-      resetPasswordToken: hashedToken,
-      resetPasswordExpire: { $gt: Date.now() },
-    }).select("+password");
+    console.log("🔑 Reset password attempt with token:", token.substring(0, 10) + "...");
 
-    if (!user) {
-      return res
-        .status(400)
-        .json({ success: false, message: "Invalid or expired token" });
+    if (!password) {
+      return res.status(400).json({
+        success: false,
+        error: "Please provide a new password",
+      });
     }
 
-    user.password = req.body.password;
+    if (password.length < 6) {
+      return res.status(400).json({
+        success: false,
+        error: "Password must be at least 6 characters long",
+      });
+    }
+
+    // Hash the token from URL
+    const resetPasswordToken = crypto
+      .createHash("sha256")
+      .update(token)
+      .digest("hex");
+
+    console.log("🔐 Looking for user with hashed token...");
+
+    // Find user with valid token
+    const user = await User.findOne({
+      resetPasswordToken,
+      resetPasswordExpire: { $gt: Date.now() },
+    });
+
+    if (!user) {
+      console.log("❌ Invalid or expired token");
+      return res.status(400).json({
+        success: false,
+        error: "Invalid or expired reset token",
+      });
+    }
+
+    console.log("✅ User found, updating password...");
+
+    // Set new password
+    user.password = password;
     user.resetPasswordToken = undefined;
     user.resetPasswordExpire = undefined;
 
     await user.save();
 
-    const token = generateToken(user._id);
+    console.log("✅ Password reset successful");
 
     res.status(200).json({
       success: true,
-      message: "Password reset successful",
-      data: { token },
+      message: "Password reset successful! You can now login with your new password.",
     });
   } catch (error) {
-    res.status(500).json({ success: false, message: error.message });
+    console.error("❌ Reset password error:", error);
+    next(error);
   }
 };
 
