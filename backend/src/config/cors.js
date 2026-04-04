@@ -27,7 +27,6 @@
 //     "Accept",
 //   ],
 // };
-
 export const corsOptions = {
   origin: function (origin, callback) {
     if (!origin) return callback(null, true);
@@ -36,16 +35,25 @@ export const corsOptions = {
       "http://localhost:3000",
       "http://localhost:5173",
       "http://127.0.0.1:3000",
-      process.env.CLIENT_URL, // from Render ENV
-      "https://progresstracker-x46b.onrender.com", 
+      process.env.CLIENT_URL, // your Vercel URL
+      "https://progress-tracker-cnbp3wwcv-mr-msboras-projects.vercel.app" // 👈 MUST ADD
     ].filter(Boolean);
 
     if (allowedOrigins.includes(origin)) {
       callback(null, true);
     } else {
-      console.log("❌ Blocked by CORS:", origin); // DEBUG
+      console.log("❌ Blocked by CORS:", origin);
       callback(new Error("Not allowed by CORS"));
     }
   },
+
   credentials: true,
+  methods: ["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
+  allowedHeaders: [
+    "Content-Type",
+    "Authorization",
+    "X-Requested-With",
+    "Accept"
+  ],
+  optionsSuccessStatus: 200
 };
