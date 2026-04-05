@@ -57,7 +57,7 @@ app.use(preventHPP);
 
 // Allow cross-origin requests with custom rules
 app.use(cors(corsOptions));
-
+app.options("*", cors(corsOptions)); 
 
 // ================= BODY PARSING =================
 
