@@ -13,7 +13,7 @@ export const corsOptions = {
       callback(null, true);
     } else {
       console.log("❌ Blocked by CORS:", origin);
-      callback(null, true); // ✅ important
+      callback(null, false); // ✅ important
     }
   },
 
