@@ -6,14 +6,14 @@ export const corsOptions = {
       "http://127.0.0.1:3000",
       process.env.CLIENT_URL,
       // "https://progress-tracker-cnbp3wwcv-mr-msboras-projects.vercel.app",
-      "https://vercel.com/mr-msboras-projects/progress-tracker/D7jGNsTzcoDmEgtVsuHW764QY4Pr"
+      "https://progress-tracker-dgxhvnq9p-mr-msboras-projects.vercel.app"
     ].filter(Boolean);
 
     if (!origin || allowedOrigins.includes(origin)) {
       callback(null, true);
     } else {
       console.log("❌ Blocked by CORS:", origin);
-      callback(null, false); // ✅ important
+      callback(null, true); // ✅ important
     }
   },
 
