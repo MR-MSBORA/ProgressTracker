@@ -673,32 +673,62 @@ export const getMe = async (req, res) => {
 //     next(error);
 //   }
 // };
-export const register = async (name, email, password) => {
+export const register = async (req, res, next) => {
   try {
-    const { data } = await api.post('/auth/register', {
+    const { name, email, password } = req.body;
+
+    // Check if user exists
+    let user = await User.findOne({ email });
+
+    if (user) {
+      return res.status(400).json({
+        success: false,
+        message: "User already exists",
+      });
+    }
+
+    // Create user
+    user = await User.create({
       name,
       email,
       password,
+      isEmailVerified: false,
     });
 
-    toast.success('Registration successful! You can now login.', {
-      duration: 4000,
-      icon: '🎉',
+    // Generate verification token
+    const verificationToken = user.generateEmailVerificationToken();
+
+    // Save token
+    await user.save({ validateBeforeSave: false });
+
+    // Create verification URL
+    const verificationUrl = `${process.env.CLIENT_URL}/verify-email/${verificationToken}`;
+
+    const message = `
+      <h1>Email Verification</h1>
+      <p>Hello ${user.name}</p>
+      <p>Click below to verify your email:</p>
+      <a href="${verificationUrl}">Verify Email</a>
+    `;
+
+    // Send email
+    await sendEmail({
+      email: user.email,
+      subject: "Verify your email",
+      html: message,
     });
-    
-    return { success: true, data };
+
+    res.status(201).json({
+      success: true,
+      message: "Registration successful. Check your email.",
+    });
+
   } catch (error) {
-    console.error('Register error:', error);
-
-    let errorMessage = 'Registration failed. Please try again.';
-
-    // ✅ FIXED
-    if (error.response?.data?.message) {
-      errorMessage = error.response.data.message;
-    }
-
-    toast.error(errorMessage, { duration: 5000 });
-    return { success: false, error: errorMessage };
+    console.error("REGISTER ERROR:", error);
+    res.status(500).json({
+      success: false,
+      message: error.message,
+    });
   }
 };
 
