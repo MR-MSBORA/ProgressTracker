@@ -673,81 +673,32 @@ export const getMe = async (req, res) => {
 //     next(error);
 //   }
 // };
-export const register = async (req, res, next) => {
+const register = async (name, email, password) => {
   try {
-    const { name, email, password } = req.body;
-
-    console.log("📥 Register body:", req.body);
-
-    // ✅ 1. Validate input
-    if (!name || !email || !password) {
-      return res.status(400).json({
-        success: false,
-        message: "Name, email and password are required",
-      });
-    }
-
-    if (password.length < 6) {
-      return res.status(400).json({
-        success: false,
-        message: "Password must be at least 6 characters",
-      });
-    }
-
-    // ✅ 2. Check existing user
-    let user = await User.findOne({ email });
-
-    if (user) {
-      return res.status(400).json({
-        success: false,
-        message: "User already exists",
-      });
-    }
-
-    // ✅ 3. Create user
-    user = await User.create({
+    const { data } = await api.post('/auth/register', {
       name,
       email,
       password,
-      isEmailVerified: false,
     });
 
-    // ✅ 4. Generate token
-    const verificationToken = user.generateEmailVerificationToken();
-    await user.save({ validateBeforeSave: false });
+    toast.success('Registration successful! You can now login.', {
+      duration: 4000,
+      icon: '🎉',
+    });
+    
+    return { success: true, data };
+  } catch (error) {
+    console.error('Register error:', error);
 
-    const verificationUrl = `${process.env.CLIENT_URL}/verify-email/${verificationToken}`;
+    let errorMessage = 'Registration failed. Please try again.';
 
-    // ✅ 5. Try sending email (DON'T BREAK IF FAILS)
-    try {
-      await sendEmail({
-        email: user.email,
-        subject: "Verify your email",
-        html: `
-          <h1>Email Verification</h1>
-          <p>Hello ${user.name}</p>
-          <p>Click below to verify:</p>
-          <a href="${verificationUrl}">Verify Email</a>
-        `,
-      });
-    } catch (emailError) {
-      console.log("❌ Email failed:", emailError.message);
-      // ⚠️ Don't block registration
+    // ✅ FIXED
+    if (error.response?.data?.message) {
+      errorMessage = error.response.data.message;
     }
 
-    // ✅ 6. Always respond success
-    res.status(201).json({
-      success: true,
-      message: "User registered successfully. Please verify email.",
-    });
-
-  } catch (error) {
-    console.error("❌ Register error:", error.message);
-
-    res.status(500).json({
-      success: false,
-      message: error.message,
-    });
+    toast.error(errorMessage, { duration: 5000 });
+    return { success: false, error: errorMessage };
   }
 };
 
