@@ -673,7 +673,7 @@ export const getMe = async (req, res) => {
 //     next(error);
 //   }
 // };
-const register = async (name, email, password) => {
+export const register = async (name, email, password) => {
   try {
     const { data } = await api.post('/auth/register', {
       name,
