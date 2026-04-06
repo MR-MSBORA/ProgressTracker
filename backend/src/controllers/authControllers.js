@@ -629,16 +629,82 @@ export const getMe = async (req, res) => {
 //     next(error);
 //   }
 // };
+// export const register = async (req, res, next) => {
+//   try {
+//     const { name, email, password } = req.body;
+
+//     let user = await User.findOne({ email });
+
+//     if (user) {
+//       return next(new ErrorResponse("User already exists", 400));
+//     }
+
+//     user = await User.create({
+//       name,
+//       email,
+//       password,
+//       isEmailVerified: false,
+//     });
+
+//     // Generate verification token
+//     const verificationToken = user.generateEmailVerificationToken();
+
+//     // Save token to DB
+//     await user.save({ validateBeforeSave: false });
+
+//     const verificationUrl = `${process.env.CLIENT_URL}/verify-email/${verificationToken}`;
+
+//     await sendEmail({
+//       email: user.email,
+//       subject: "Verify your email",
+//       html: `
+//         <h1>Email Verification</h1>
+//         <p>Hello ${user.name}</p>
+//         <p>Click below to verify:</p>
+//         <a href="${verificationUrl}">Verify Email</a>
+//       `,
+//     });
+
+//     res.status(201).json({
+//       success: true,
+//       message: "Please check your email to verify your account",
+//     });
+//   } catch (error) {
+//     next(error);
+//   }
+// };
 export const register = async (req, res, next) => {
   try {
     const { name, email, password } = req.body;
 
+    console.log("📥 Register body:", req.body);
+
+    // ✅ 1. Validate input
+    if (!name || !email || !password) {
+      return res.status(400).json({
+        success: false,
+        message: "Name, email and password are required",
+      });
+    }
+
+    if (password.length < 6) {
+      return res.status(400).json({
+        success: false,
+        message: "Password must be at least 6 characters",
+      });
+    }
+
+    // ✅ 2. Check existing user
     let user = await User.findOne({ email });
 
     if (user) {
-      return next(new ErrorResponse("User already exists", 400));
+      return res.status(400).json({
+        success: false,
+        message: "User already exists",
+      });
     }
 
+    // ✅ 3. Create user
     user = await User.create({
       name,
       email,
@@ -646,31 +712,42 @@ export const register = async (req, res, next) => {
       isEmailVerified: false,
     });
 
-    // Generate verification token
+    // ✅ 4. Generate token
     const verificationToken = user.generateEmailVerificationToken();
-
-    // Save token to DB
     await user.save({ validateBeforeSave: false });
 
     const verificationUrl = `${process.env.CLIENT_URL}/verify-email/${verificationToken}`;
 
-    await sendEmail({
-      email: user.email,
-      subject: "Verify your email",
-      html: `
-        <h1>Email Verification</h1>
-        <p>Hello ${user.name}</p>
-        <p>Click below to verify:</p>
-        <a href="${verificationUrl}">Verify Email</a>
-      `,
-    });
+    // ✅ 5. Try sending email (DON'T BREAK IF FAILS)
+    try {
+      await sendEmail({
+        email: user.email,
+        subject: "Verify your email",
+        html: `
+          <h1>Email Verification</h1>
+          <p>Hello ${user.name}</p>
+          <p>Click below to verify:</p>
+          <a href="${verificationUrl}">Verify Email</a>
+        `,
+      });
+    } catch (emailError) {
+      console.log("❌ Email failed:", emailError.message);
+      // ⚠️ Don't block registration
+    }
 
+    // ✅ 6. Always respond success
     res.status(201).json({
       success: true,
-      message: "Please check your email to verify your account",
+      message: "User registered successfully. Please verify email.",
     });
+
   } catch (error) {
-    next(error);
+    console.error("❌ Register error:", error.message);
+
+    res.status(500).json({
+      success: false,
+      message: error.message,
+    });
   }
 };
 
