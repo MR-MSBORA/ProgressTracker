@@ -44,6 +44,11 @@ connectDB();        // Connect to MongoDB
 
 const app = express();
 
+// ================= CORS =================
+
+// Allow cross-origin requests with custom rules
+app.use(cors(corsOptions));
+
 
 // ================= SECURITY (APPLIED FIRST) =================
 
@@ -52,11 +57,6 @@ app.use(helmetConfig);
 app.use(securityHeaders);
 app.use(preventHPP);
 
-
-// ================= CORS =================
-
-// Allow cross-origin requests with custom rules
-app.use(cors(corsOptions));
 
 
 // ================= BODY PARSING =================
