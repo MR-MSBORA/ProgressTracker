@@ -8,7 +8,7 @@ const sendEmail = async (options) => {
     // Using host and port is more reliable on Render than the "service" shortcut
     host: "smtp.gmail.com",
     port: 587,
-    secure: true, // Use SSL/TLS
+    secure: false,
     auth: {
       user: process.env.EMAIL_USER,
       pass: process.env.EMAIL_PASSWORD, // ✅ 16-character App password
