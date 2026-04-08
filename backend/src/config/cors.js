@@ -3,8 +3,7 @@ const allowedOrigins = [
   "http://localhost:5173",
   "http://127.0.0.1:3000",
   process.env.CLIENT_URL,
-  "https://progress-tracker-snowy-nu.vercel.app",
-  "https://progress-tracker-6lt1e8obo-mr-msboras-projects.vercel.app",
+  "https://progresstracker-1-z4o0.onrender.com",
 ].filter(Boolean);
 
 export const corsOptions = {
