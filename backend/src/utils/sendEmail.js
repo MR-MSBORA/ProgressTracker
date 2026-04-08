@@ -1,65 +1,30 @@
-// // ================= IMPORTS =================
-// import nodemailer from "nodemailer";
+import SibApiV3Sdk from "sib-api-v3-sdk";
 
-// // ================= SEND EMAIL FUNCTION =================
-// const sendEmail = async (options) => {
-//   // ================= CREATE TRANSPORTER =================
-//   const transporter = nodemailer.createTransport({
-//     // Using host and port is more reliable on Render than the "service" shortcut
-//     host: "smtp.gmail.com",
-//     port: 587,
-//     secure: false,
-//     auth: {
-//       user: process.env.EMAIL_USER,
-//       pass: process.env.EMAIL_PASSWORD, // ✅ 16-character App password
-//     },
-//     connectionTimeout: 10000, // 10 seconds
-//     family: 4, // Force IPv4
-//   });
+const client = SibApiV3Sdk.ApiClient.instance;
 
-//   // ================= EMAIL OPTIONS =================
-//   const mailOptions = {
-//     from: process.env.EMAIL_FROM || process.env.EMAIL_USER,
-//     to: options.email,
-//     subject: options.subject,
-//     html: options.html || options.message,
-//   };
-
-//   // ================= SEND EMAIL =================
-//   try {
-//     const info = await transporter.sendMail(mailOptions);
-//     console.log("✅ Email sent successfully:", info.messageId);
-//     return true;
-//   } catch (error) {
-//     // We log the error so you can see it in Render logs,
-//     // but we DO NOT 'throw' it. This prevents the registration
-//     // from crashing if the email service is down.
-//     console.error("❌ Email send error:", error.message);
-
-//     // Returning false instead of throwing allows your
-//     // AuthController to finish the user registration.
-//     return false;
-//   }
-// };
-
-// export default sendEmail;
-import { Resend } from "resend";
-
-const resend = new Resend(process.env.RESEND_API_KEY);
+const apiKey = client.authentications["api-key"];
+apiKey.apiKey = process.env.BREVO_API_KEY;
 
 const sendEmail = async (options) => {
   try {
-    await resend.emails.send({
-      from: "onboarding@resend.dev",
-      to: options.email,
-      subject: options.subject,
-      html: options.html || options.message,
-    });
+    const apiInstance = new SibApiV3Sdk.TransactionalEmailsApi();
 
-    console.log("✅ Email sent");
+    const sendSmtpEmail = {
+      to: [{ email: options.email }],
+      sender: {
+        email: process.env.EMAIL_FROM, // your email
+        name: "ProgressTrack",
+      },
+      subject: options.subject,
+      htmlContent: options.html || options.message,
+    };
+
+    const response = await apiInstance.sendTransacEmail(sendSmtpEmail);
+
+    console.log("✅ Email sent:", response.messageId);
     return true;
   } catch (error) {
-    console.error("❌ Email send error:", error.message);
+    console.error("❌ Email error:", error.message);
     return false;
   }
 };
