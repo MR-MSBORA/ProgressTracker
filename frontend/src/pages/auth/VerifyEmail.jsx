@@ -22,12 +22,9 @@ const VerifyEmail = () => {
         console.log("🔍 Verifying token:", token);
 
         const response = await fetch(
-          `http://localhost:5000/api/auth/verify-email/${token}`,
+          `${import.meta.env.VITE_API_URL}/auth/verify-email/${token}`,
           {
             method: "GET",
-            headers: {
-              "Content-Type": "application/json",
-            },
           }
         );
 
@@ -49,7 +46,7 @@ const VerifyEmail = () => {
       } catch (error) {
         console.error("❌ Verification error:", error);
         setStatus("error");
-        setMessage("Email verification failed. Please try again.");
+        setMessage("Something went wrong. Please try again.");
       }
     };
 
