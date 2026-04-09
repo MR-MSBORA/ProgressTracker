@@ -166,7 +166,7 @@ const DailyScore = () => {
         </div>
 
         {/* Pending */}
-        <div className="bg-white dark:bg-gray-800 rounded-lg p-3 text-center border-2 border-yellow-400">
+        <div className="bg-white dark:bg-gray-800 rounded-lg p-3 text-center border-2">
           <div className="flex items-center justify-center gap-2 mb-1">
             <FiClock className="w-4 h-4 text-yellow-600 dark:text-yellow-400" />
             <span className="text-xs text-gray-600 dark:text-gray-400">Pending</span>
