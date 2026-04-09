@@ -85,17 +85,31 @@ export const SkillProvider = ({ children }) => {
   };
 
   // Log practice
-  const logPractice = async (id, practiceData) => {
+  // const logPractice = async (id, practiceData) => {
+  //   try {
+  //     const { data } = await api.post(`/skills/${id}/practice`, practiceData);
+  //     setSkills(prev => prev.map(skill => skill._id === id ? data.data : skill));
+  //     toast.success('Practice logged!');
+  //     fetchStats();
+  //     return { success: true };
+  //   } catch (error) {
+  //     const msg = error.response?.data?.error || 'Failed to log practice';
+  //     toast.error(msg);
+  //     return { success: false, error: msg };
+  //   }
+  // };
+  const logPractice = async (skillId, practiceData) => {
     try {
-      const { data } = await api.post(`/skills/${id}/practice`, practiceData);
-      setSkills(prev => prev.map(skill => skill._id === id ? data.data : skill));
+      const { data } = await api.post(`/skills/${skillId}/practice`, practiceData);
+      setSkills(prev => prev.map(skill =>
+        skill._id === skillId ? data.data : skill
+      ));
       toast.success('Practice logged!');
-      fetchStats();
-      return { success: true };
     } catch (error) {
+      console.error('Log practice error:', error);
       const msg = error.response?.data?.error || 'Failed to log practice';
       toast.error(msg);
-      return { success: false, error: msg };
+      throw error;
     }
   };
 
