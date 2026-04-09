@@ -120,14 +120,12 @@
 // export default DailyScore;
 
 
-
 import { useTask } from '../../context/TaskContext';
 import { FiTrendingUp, FiCheckCircle, FiCircle, FiClock } from 'react-icons/fi';
 
 const DailyScore = () => {
   const { dailyScore, loading } = useTask();
 
-  // ✅ Loading state
   if (loading) {
     return (
       <div className="bg-gray-100 dark:bg-gray-800 rounded-xl p-6 animate-pulse">
@@ -139,18 +137,14 @@ const DailyScore = () => {
 
   if (!dailyScore) return null;
 
-  // ✅ Use correct values from backend
   const completed = Number(dailyScore?.completedTasks) || 0;
   const total = Number(dailyScore?.totalTasks) || 0;
 
-  // 🔥 FIX: derive score instead of using broken backend values
   const score = completed;
   const maxScore = total;
 
-  // ✅ Correct pending
   const pending = Math.max(0, total - completed);
 
-  // ✅ Correct progress
   const progress = maxScore > 0
     ? Math.min(100, Math.round((score / maxScore) * 100))
     : 0;
@@ -216,13 +210,13 @@ const DailyScore = () => {
           </p>
         </div>
 
-        {/* Pending */}
-        <div className="bg-white dark:bg-gray-800 rounded-lg p-3 text-center border-2">
+        {/* Pending (now same style) */}
+        <div className="bg-white dark:bg-gray-800 rounded-lg p-3 text-center">
           <div className="flex items-center justify-center gap-2 mb-1">
-            <FiClock className="w-4 h-4 text-yellow-600 dark:text-yellow-400" />
+            <FiClock className="w-4 h-4 text-gray-600 dark:text-gray-400" />
             <span className="text-xs text-gray-600 dark:text-gray-400">Pending</span>
           </div>
-          <p className="text-2xl font-extrabold text-yellow-600 dark:text-yellow-400">
+          <p className="text-xl font-bold text-gray-900 dark:text-white">
             {pending}
           </p>
         </div>
